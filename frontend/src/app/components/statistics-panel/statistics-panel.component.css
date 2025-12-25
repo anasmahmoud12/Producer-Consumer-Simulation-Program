@@ -1,0 +1,138 @@
+.statistics-panel,
+.settings-panel {
+  position: absolute;
+  top: 10rem;
+  right: 2rem;
+  width: 400px;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 0.75rem;
+  border: 1px solid #334155;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  max-height: calc(100vh - 12rem);
+  overflow-y: auto;
+}
+
+.settings-panel {
+  left: 2rem;
+  right: auto;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #334155;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #60a5fa;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-close:hover {
+  color: white;
+}
+
+.panel-content {
+  padding: 1.5rem;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.metric-card {
+  background: rgba(15, 23, 42, 0.5);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #334155;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.metric-value {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: white;
+}
+
+.metric-value.success {
+  color: #10b981;
+}
+
+.metric-value.warning {
+  color: #f59e0b;
+}
+
+.metric-value.info {
+  color: #60a5fa;
+}
+
+.chart-section {
+  margin-bottom: 2rem;
+}
+
+.chart-section h4 {
+  margin: 0 0 1rem 0;
+  color: #cbd5e1;
+  font-size: 1rem;
+}
+
+.utilization-item,
+.processed-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.machine-id {
+  min-width: 3rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 0.5rem;
+  background: #1e293b;
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+  transition: width 0.3s ease;
+}
+
+.utilization-value {
+  min-width: 3rem;
+  text-align: right;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+}

@@ -1,0 +1,71 @@
+
+<div class="statistics-panel">
+  <div class="panel-header">
+    <h3>Real-Time Statistics</h3>
+    <button class="btn-close" (click)="onClose()">×</button>
+  </div>
+  
+  <div class="panel-content" *ngIf="statistics">
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Products Processed</div>
+        <div class="metric-value success">{{ statistics.totalProductsProcessed }}</div>
+      </div>
+      
+      <div class="metric-card">
+        <div class="metric-label">Avg Wait Time</div>
+        <div class="metric-value warning">{{ formatTime(statistics.averageWaitTime) }}</div>
+      </div>
+      
+      <div class="metric-card">
+        <div class="metric-label">Throughput</div>
+        <div class="metric-value info">{{ statistics.throughput.toFixed(2) }}/s</div>
+      </div>
+      
+      <div class="metric-card">
+        <div class="metric-label">Products in System</div>
+        <div class="metric-value">{{ statistics.totalProductsInSystem }}</div>
+      </div>
+    </div>
+    
+    <!-- Machine Utilization -->
+    <div class="chart-section">
+      <h4>Machine Utilization</h4>
+      <div class="utilization-list">
+        <div 
+          *ngFor="let item of getMachineUtilizationArray()" 
+          class="utilization-item">
+          <span class="machine-id">{{ item.id }}</span>
+          <div class="progress-bar">
+            <div 
+              class="progress-fill"
+              [style.width.%]="item.utilization">
+            </div>
+          </div>
+          <span class="utilization-value">{{ item.utilization.toFixed(0) }}%</span>
+        </div>
+      </div>
+      <canvas id="utilizationChart" width="400" height="200"></canvas>
+    </div>
+    
+    <!-- Processed Count by Machine -->
+    <div class="chart-section">
+      <h4>Products Processed by Machine</h4>
+      <div class="processed-list">
+        <div 
+          *ngFor="let item of statistics.machineProcessedCount | keyvalue" 
+          class="processed-item">
+          <span class="machine-id">{{ item.key }}</span>
+          <span class="processed-count">{{ item.value }}</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Throughput Over Time -->
+    <div class="chart-section">
+      <h4>Throughput Over Time</h4>
+      <canvas id="throughputChart" width="400" height="150"></canvas>
+    </div>
+  </div>
+</div>

@@ -1,23 +1,23 @@
 package com.Producer.Consumer.Simulation.Program.Backend.Config;
 
+import com.Producer.Consumer.Simulation.Program.Backend.Websocket.SimulationWebSocketHandler;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.*;
 
-@Configuration
-@EnableWebSocketMessageBroker
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic");
-        config.setApplicationDestinationPrefixes("/app");
+@Configuration
+@EnableWebSocket
+public class WebSocketConfig implements WebSocketConfigurer {
+
+    private final SimulationWebSocketHandler webSocketHandler;
+
+    public WebSocketConfig(SimulationWebSocketHandler webSocketHandler) {
+        this.webSocketHandler = webSocketHandler;
     }
 
     @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws-simulation")
-                .setAllowedOrigins("http://localhost:4200")
-                .withSockJS();
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(webSocketHandler, "/ws-simulation")
+                .setAllowedOrigins("http://localhost:4200", "http://localhost:80");
     }
 }

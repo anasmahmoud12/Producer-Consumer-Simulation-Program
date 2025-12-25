@@ -1,8 +1,10 @@
 package com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer;
 
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
-
+@Component
 public class SimulationEventPublisher {
     private final List<SimulationObserver> observers = new ArrayList<>();
 

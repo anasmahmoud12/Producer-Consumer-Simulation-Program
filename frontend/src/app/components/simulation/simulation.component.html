@@ -1,0 +1,137 @@
+
+<div class="simulation-container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1 class="main-title">Production Line Simulator</h1>
+        <p class="subtitle">Producer/Consumer Queuing Network with Design Patterns</p>
+      </div>
+      
+      <div class="header-actions">
+        <button class="btn btn-primary" (click)="toggleStats()">
+          <i class="icon-chart"></i>
+          Statistics
+        </button>
+        <button class="btn btn-secondary" (click)="toggleSettings()">
+          <i class="icon-settings"></i>
+          Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Control Panel -->
+  <div class="control-panel">
+    <div class="control-actions">
+      <button 
+        *ngIf="!isRunning" 
+        class="btn btn-success btn-lg"
+        (click)="startSimulation()">
+        <i class="icon-play"></i>
+        Start Simulation
+      </button>
+      
+      <ng-container *ngIf="isRunning">
+        <button 
+          class="btn btn-warning"
+          (click)="pauseSimulation()">
+          <i class="icon-pause"></i>
+          {{ isPaused ? 'Resume' : 'Pause' }}
+        </button>
+        <button 
+          class="btn btn-danger"
+          (click)="stopSimulation()">
+          Stop
+        </button>
+      </ng-container>
+      
+      <button 
+        class="btn btn-info"
+        (click)="replaySimulation()"
+        [disabled]="!statistics">
+        <i class="icon-replay"></i>
+        Replay
+      </button>
+    </div>
+
+    <div class="configuration-actions">
+      <button 
+        class="btn btn-secondary"
+        (click)="addQueue()"
+        [disabled]="isRunning">
+        <i class="icon-plus"></i>
+        Add Queue
+      </button>
+      <button 
+        class="btn btn-secondary"
+        (click)="addMachine()"
+        [disabled]="isRunning">
+        <i class="icon-plus"></i>
+        Add Machine
+      </button>
+      <button 
+        class="btn btn-secondary"
+        [class.active]="connectionMode"
+        (click)="toggleConnectionMode()"
+        [disabled]="isRunning">
+        Connect
+      </button>
+      <button 
+        class="btn btn-secondary"
+        (click)="saveConfiguration()">
+        <i class="icon-save"></i>
+        Save Config
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Canvas Area -->
+  <div class="canvas-container">
+    <canvas 
+      #canvas 
+      (click)="onCanvasClick($event)"
+      [class.connection-mode]="connectionMode">
+    </canvas>
+    
+    <div 
+      *ngIf="connectionMode" 
+      class="connection-hint">
+      {{ connectionStart ? 'Click destination element' : 'Click source element' }}
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <h4>Legend</h4>
+      <div class="legend-item">
+        <div class="legend-icon queue"></div>
+        <span>Queue (shows product count)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-icon machine idle"></div>
+        <span>Machine (idle)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-icon machine processing"></div>
+        <span>Machine (processing)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Panel -->
+  <app-statistics-panel
+    *ngIf="showStats"
+    [statistics]="statistics"
+    [machines]="machines"
+    (close)="showStats = false">
+  </app-statistics-panel>
+
+  <!-- Settings Panel -->
+  <app-settings-panel
+    *ngIf="showSettings"
+    [(simulationSpeed)]="simulationSpeed"
+    [(productionRate)]="productionRate"
+    [disabled]="isRunning"
+    (close)="showSettings = false">
+  </app-settings-panel>
+</div>
