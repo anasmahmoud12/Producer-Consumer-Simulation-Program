@@ -2,9 +2,14 @@ package com.Producer.Consumer.Simulation.Program.Backend.Service;
 
 
 import lombok.Data;
+import org.springframework.stereotype.Service;
+
 import java.util.*;
 
-@Data
+import java.util.HashMap;
+import java.util.Map;
+@Service
+
 public class SimulationStatistics {
     private int totalProductsProcessed;
     private double averageWaitTime;
@@ -21,38 +26,42 @@ public class SimulationStatistics {
         this.simulationStartTime = System.currentTimeMillis();
     }
 
-    public void updateMachineUtilization(String machineId, long processingTime, long totalTime) {
-        double utilization = (double) processingTime / totalTime * 100;
-        machineUtilization.put(machineId, utilization);
+    // Getters and Setters
+    public int getTotalProductsProcessed() { return totalProductsProcessed; }
+    public void setTotalProductsProcessed(int totalProductsProcessed) {
+        this.totalProductsProcessed = totalProductsProcessed;
     }
 
-    public void incrementProcessedCount(String machineId) {
-        machineProcessedCount.merge(machineId, 1, Integer::sum);
-        totalProductsProcessed++;
+    public double getAverageWaitTime() { return averageWaitTime; }
+    public void setAverageWaitTime(double averageWaitTime) {
+        this.averageWaitTime = averageWaitTime;
     }
 
-    public void updateWaitTime(long waitTime) {
-        averageWaitTime = (averageWaitTime * (totalProductsProcessed - 1) + waitTime)
-                / totalProductsProcessed;
+    public double getAverageProcessingTime() { return averageProcessingTime; }
+    public void setAverageProcessingTime(double averageProcessingTime) {
+        this.averageProcessingTime = averageProcessingTime;
     }
 
-    public void calculateThroughput() {
-        long elapsedSeconds = (System.currentTimeMillis() - simulationStartTime) / 1000;
-        if (elapsedSeconds > 0) {
-            throughput = (double) totalProductsProcessed / elapsedSeconds;
-        }
+    public Map<String, Double> getMachineUtilization() { return machineUtilization; }
+    public void setMachineUtilization(Map<String, Double> machineUtilization) {
+        this.machineUtilization = machineUtilization;
     }
 
-    public SimulationStatistics copy() {
-        SimulationStatistics copy = new SimulationStatistics();
-        copy.totalProductsProcessed = this.totalProductsProcessed;
-        copy.averageWaitTime = this.averageWaitTime;
-        copy.averageProcessingTime = this.averageProcessingTime;
-        copy.machineUtilization = new HashMap<>(this.machineUtilization);
-        copy.machineProcessedCount = new HashMap<>(this.machineProcessedCount);
-        copy.throughput = this.throughput;
-        copy.totalProductsInSystem = this.totalProductsInSystem;
-        copy.simulationStartTime = this.simulationStartTime;
-        return copy;
+    public Map<String, Integer> getMachineProcessedCount() { return machineProcessedCount; }
+    public void setMachineProcessedCount(Map<String, Integer> machineProcessedCount) {
+        this.machineProcessedCount = machineProcessedCount;
+    }
+
+    public double getThroughput() { return throughput; }
+    public void setThroughput(double throughput) { this.throughput = throughput; }
+
+    public int getTotalProductsInSystem() { return totalProductsInSystem; }
+    public void setTotalProductsInSystem(int totalProductsInSystem) {
+        this.totalProductsInSystem = totalProductsInSystem;
+    }
+
+    public long getSimulationStartTime() { return simulationStartTime; }
+    public void setSimulationStartTime(long simulationStartTime) {
+        this.simulationStartTime = simulationStartTime;
     }
 }

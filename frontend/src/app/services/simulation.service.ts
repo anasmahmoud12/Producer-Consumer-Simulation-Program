@@ -77,6 +77,10 @@ export class SimulationService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   
+  // ✅ ADD THIS: Connection status observable
+  private connectionStatusSubject = new BehaviorSubject<string>('Disconnected');
+  public connectionStatus$ = this.connectionStatusSubject.asObservable();
+  
   // Observables for real-time updates
   public simulationEvents$ = new Subject<SimulationEvent>();
   public stateUpdate$ = new Subject<any>();
@@ -90,11 +94,13 @@ export class SimulationService {
   
   private connectWebSocket(): void {
     try {
+      this.connectionStatusSubject.next('Connecting...'); // ✅ UPDATE STATUS
       this.ws = new WebSocket(this.wsUrl);
       
       this.ws.onopen = () => {
         console.log('✅ WebSocket connected');
         this.connected.next(true);
+        this.connectionStatusSubject.next('Connected'); // ✅ UPDATE STATUS
         this.reconnectAttempts = 0;
         
         // Subscribe to topics
@@ -116,21 +122,27 @@ export class SimulationService {
       this.ws.onerror = (error) => {
         console.error('❌ WebSocket error:', error);
         this.connected.next(false);
+        this.connectionStatusSubject.next('Error'); // ✅ UPDATE STATUS
       };
       
       this.ws.onclose = () => {
         console.log('🔌 WebSocket disconnected');
         this.connected.next(false);
+        this.connectionStatusSubject.next('Disconnected'); // ✅ UPDATE STATUS
         
         // Attempt to reconnect
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
           console.log(`🔄 Reconnecting... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+          this.connectionStatusSubject.next(`Reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`); // ✅ UPDATE STATUS
           setTimeout(() => this.connectWebSocket(), 3000);
+        } else {
+          this.connectionStatusSubject.next('Connection Failed'); // ✅ UPDATE STATUS
         }
       };
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
+      this.connectionStatusSubject.next('Connection Failed'); // ✅ UPDATE STATUS
     }
   }
   

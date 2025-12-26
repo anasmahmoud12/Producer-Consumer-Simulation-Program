@@ -1,7 +1,6 @@
-
 <div class="settings-panel">
   <div class="panel-header">
-    <h3>Simulation Settings</h3>
+    <h3>⚙️ Simulation Settings</h3>
     <button class="btn-close" (click)="onClose()">×</button>
   </div>
   
@@ -9,7 +8,7 @@
     <!-- Simulation Speed -->
     <div class="setting-group">
       <label class="setting-label">
-        Simulation Speed: {{ simulationSpeed }}x
+        Simulation Speed: <strong>{{ simulationSpeed }}x</strong>
       </label>
       <input 
         type="range" 
@@ -19,10 +18,7 @@
         step="0.5"
         [value]="simulationSpeed"
         [disabled]="disabled"
-        
-        (input)="onSimulationSpeedChange($any($event.target).valueAsNumber)">
-<!-- (input)="onSimulationSpeedChange($any($event.target).valueAsNumber)" -->
-
+        (input)="onSimulationSpeedChange(+$any($event.target).value)">
       <div class="setting-hint">
         Controls how fast the simulation runs
       </div>
@@ -31,7 +27,7 @@
     <!-- Production Rate -->
     <div class="setting-group">
       <label class="setting-label">
-        Production Rate: {{ productionRate }}ms
+        Production Rate: <strong>{{ productionRate }}ms</strong>
       </label>
       <input 
         type="range" 
@@ -41,9 +37,9 @@
         step="500"
         [value]="productionRate"
         [disabled]="disabled"
-  (input)="onProductionRateChange($any($event.target).valueAsNumber)">
+        (input)="onProductionRateChange(+$any($event.target).value)">
       <div class="setting-hint">
-        Time between product generations
+        Time between product generations (lower = faster)
       </div>
     </div>
     
@@ -67,13 +63,23 @@
       </div>
     </div>
     
-    <!-- Info Box -->
+    <!-- Design Patterns Info -->
     <div class="info-box">
-      <h5>Design Patterns Used:</h5>
+      <h5>🎨 Design Patterns Used:</h5>
       <ul>
         <li><strong>Observer Pattern:</strong> Machines observe queues for products</li>
         <li><strong>Snapshot Pattern:</strong> Save/restore simulation states</li>
         <li><strong>Concurrency Pattern:</strong> Each machine runs on separate thread</li>
+      </ul>
+    </div>
+    
+    <!-- WebSocket Info -->
+    <div class="info-box websocket-info">
+      <h5>🔌 Connection Info:</h5>
+      <ul>
+        <li><strong>Native WebSocket:</strong> Real-time bidirectional communication</li>
+        <li><strong>HTTP Fallback:</strong> Automatic polling if WebSocket fails</li>
+        <li><strong>No Dependencies:</strong> Uses browser's built-in WebSocket API</li>
       </ul>
     </div>
   </div>

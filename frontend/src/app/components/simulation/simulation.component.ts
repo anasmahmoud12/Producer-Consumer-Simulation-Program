@@ -1,16 +1,28 @@
-
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SimulationService, Machine, ProductionQueue, Connection, SimulationStatistics, SimulationEvent } from '../../services/simulation.service';
+import { SimulationService } from '../../services/simulation.service';
+import { 
+  Machine, 
+  ProductionQueue, 
+  Connection, 
+  SimulationStatistics, 
+  SimulationEvent 
+} from '../../models/simulation.models';
 import { Subscription } from 'rxjs';
-import { SettingsPanelComponent } from '../settings-panel/settings-panel.component';
+// ⚠️ IMPORTANT: Import the separate components
 import { StatisticsPanelComponent } from '../statistics-panel/statistics-panel.component';
+import { SettingsPanelComponent } from '../settings-panel/settings-panel.component';
 
 @Component({
   selector: 'app-simulation',
   standalone: true,
-  imports: [CommonModule, FormsModule,SettingsPanelComponent,StatisticsPanelComponent],
+  imports: [
+    CommonModule, 
+    FormsModule,
+    StatisticsPanelComponent,  // ✅ Add this
+    SettingsPanelComponent     // ✅ Add this
+  ],
   templateUrl: './simulation.component.html',
   styleUrls: ['./simulation.component.css']
 })
@@ -28,6 +40,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
   showSettings = false;
   connectionMode = false;
   connectionStart: string | null = null;
+  connectionStatus = 'Checking...';
   
   simulationSpeed = 1;
   productionRate = 2000;
@@ -43,6 +56,12 @@ export class SimulationComponent implements OnInit, OnDestroy {
     this.loadInitialState();
     this.subscribeToUpdates();
     this.startRenderLoop();
+    
+    this.subscriptions.push(
+      this.simulationService.connectionStatus$.subscribe(status => {
+        this.connectionStatus = status;
+      })
+    );
   }
   
   ngOnDestroy(): void {
@@ -71,19 +90,46 @@ export class SimulationComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading initial state:', error);
+        this.loadDemoState();
       }
     });
   }
   
+  private loadDemoState(): void {
+    this.queues = [
+      { id: 'Q0', x: 100, y: 200, capacity: 100, products: [], waitingMachines: [] },
+      { id: 'Q1', x: 500, y: 200, capacity: 100, products: [], waitingMachines: [] },
+      { id: 'Q2', x: 900, y: 200, capacity: 100, products: [], waitingMachines: [] }
+    ];
+    
+    this.machines = [
+      { 
+        id: 'M1', x: 300, y: 200, minServiceTime: 1000, maxServiceTime: 2000,
+        status: 'idle', currentProduct: null, color: '#94a3b8', processedCount: 0,
+        totalProcessingTime: 0, reliability: 0.95
+      },
+      { 
+        id: 'M2', x: 700, y: 200, minServiceTime: 1500, maxServiceTime: 2500,
+        status: 'idle', currentProduct: null, color: '#94a3b8', processedCount: 0,
+        totalProcessingTime: 0, reliability: 0.92
+      }
+    ];
+    
+    this.connections = [
+      { from: 'Q0', to: 'M1' },
+      { from: 'M1', to: 'Q1' },
+      { from: 'Q1', to: 'M2' },
+      { from: 'M2', to: 'Q2' }
+    ];
+  }
+  
   private subscribeToUpdates(): void {
-    // Subscribe to simulation events
     this.subscriptions.push(
       this.simulationService.simulationEvents$.subscribe(event => {
         this.handleSimulationEvent(event);
       })
     );
     
-    // Subscribe to state updates
     this.subscriptions.push(
       this.simulationService.stateUpdate$.subscribe(state => {
         if (state.machines) this.machines = state.machines;
@@ -91,7 +137,6 @@ export class SimulationComponent implements OnInit, OnDestroy {
       })
     );
     
-    // Subscribe to statistics
     this.subscriptions.push(
       this.simulationService.statisticsUpdate$.subscribe(stats => {
         this.statistics = stats;
@@ -146,7 +191,6 @@ export class SimulationComponent implements OnInit, OnDestroy {
     const ctx = this.ctx;
     const canvas = this.canvas.nativeElement;
     
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Draw connections
@@ -162,7 +206,6 @@ export class SimulationComponent implements OnInit, OnDestroy {
         ctx.lineWidth = 2;
         ctx.stroke();
         
-        // Draw arrowhead
         const angle = Math.atan2(to.y - from.y, to.x - from.x);
         const headlen = 10;
         ctx.beginPath();
@@ -192,13 +235,11 @@ export class SimulationComponent implements OnInit, OnDestroy {
       ctx.fill();
       ctx.stroke();
       
-      // Queue ID
       ctx.fillStyle = 'white';
       ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(queue.id, queue.x, queue.y - 5);
       
-      // Product count
       ctx.fillStyle = '#60a5fa';
       ctx.font = 'bold 20px Arial';
       ctx.fillText(queue.products.length.toString(), queue.x, queue.y + 15);
@@ -215,19 +256,15 @@ export class SimulationComponent implements OnInit, OnDestroy {
       ctx.lineWidth = 3;
       ctx.stroke();
       
-      // Machine ID
       ctx.fillStyle = 'white';
       ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(machine.id, machine.x, machine.y);
       
-      // Processed count
       ctx.font = '10px Arial';
       ctx.fillText(machine.processedCount.toString(), machine.x, machine.y + 15);
     });
   }
-  
-  // ===== Control Methods =====
   
   startSimulation(): void {
     this.simulationService.startSimulation(this.productionRate).subscribe({
@@ -264,10 +301,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
   }
   
   replaySimulation(): void {
-    this.simulationService.restoreSnapshot(0).subscribe({
-      next: () => setTimeout(() => this.startSimulation(), 500),
-      error: (error) => console.error('Error replaying simulation:', error)
-    });
+    alert('Replay functionality requires backend implementation');
   }
   
   addMachine(): void {
@@ -311,7 +345,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
           this.connectionStart = clicked.id;
         } else {
           this.simulationService.addConnection(
-            this.connectionStart, 
+            this.connectionStart,
             clicked.id
           ).subscribe({
             next: (conn) => {
@@ -327,12 +361,12 @@ export class SimulationComponent implements OnInit, OnDestroy {
   }
   
   private findElementAt(x: number, y: number): any {
-    const machine = this.machines.find(m => 
+    const machine = this.machines.find(m =>
       Math.abs(m.x - x) < 40 && Math.abs(m.y - y) < 40
     );
     if (machine) return machine;
     
-    const queue = this.queues.find(q => 
+    const queue = this.queues.find(q =>
       Math.abs(q.x - x) < 30 && Math.abs(q.y - y) < 30
     );
     return queue;
@@ -341,7 +375,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
   saveConfiguration(): void {
     this.simulationService.exportConfiguration().subscribe({
       next: (config) => {
-        const blob = new Blob([JSON.stringify(config, null, 2)], 
+        const blob = new Blob([JSON.stringify(config, null, 2)],
           { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

@@ -1,4 +1,3 @@
-
 <div class="simulation-container">
   <!-- Header -->
   <div class="header">
@@ -9,13 +8,17 @@
       </div>
       
       <div class="header-actions">
+        <!-- Connection Status -->
+        <div class="connection-status" [ngClass]="{'connected': connectionStatus.includes('Connected')}">
+          <span class="status-dot"></span>
+          {{ connectionStatus }}
+        </div>
+        
         <button class="btn btn-primary" (click)="toggleStats()">
-          <i class="icon-chart"></i>
-          Statistics
+          📊 Statistics
         </button>
         <button class="btn btn-secondary" (click)="toggleSettings()">
-          <i class="icon-settings"></i>
-          Settings
+          ⚙️ Settings
         </button>
       </div>
     </div>
@@ -28,21 +31,19 @@
         *ngIf="!isRunning" 
         class="btn btn-success btn-lg"
         (click)="startSimulation()">
-        <i class="icon-play"></i>
-        Start Simulation
+        ▶️ Start Simulation
       </button>
       
       <ng-container *ngIf="isRunning">
         <button 
           class="btn btn-warning"
           (click)="pauseSimulation()">
-          <i class="icon-pause"></i>
-          {{ isPaused ? 'Resume' : 'Pause' }}
+          {{ isPaused ? '▶️ Resume' : '⏸️ Pause' }}
         </button>
         <button 
           class="btn btn-danger"
           (click)="stopSimulation()">
-          Stop
+          ⏹️ Stop
         </button>
       </ng-container>
       
@@ -50,8 +51,7 @@
         class="btn btn-info"
         (click)="replaySimulation()"
         [disabled]="!statistics">
-        <i class="icon-replay"></i>
-        Replay
+        🔄 Replay
       </button>
     </div>
 
@@ -60,28 +60,25 @@
         class="btn btn-secondary"
         (click)="addQueue()"
         [disabled]="isRunning">
-        <i class="icon-plus"></i>
-        Add Queue
+        ➕ Add Queue
       </button>
       <button 
         class="btn btn-secondary"
         (click)="addMachine()"
         [disabled]="isRunning">
-        <i class="icon-plus"></i>
-        Add Machine
+        ➕ Add Machine
       </button>
       <button 
         class="btn btn-secondary"
-        [class.active]="connectionMode"
+        [ngClass]="{'active': connectionMode}"
         (click)="toggleConnectionMode()"
         [disabled]="isRunning">
-        Connect
+        🔗 Connect
       </button>
       <button 
         class="btn btn-secondary"
         (click)="saveConfiguration()">
-        <i class="icon-save"></i>
-        Save Config
+        💾 Save Config
       </button>
     </div>
   </div>
@@ -91,7 +88,7 @@
     <canvas 
       #canvas 
       (click)="onCanvasClick($event)"
-      [class.connection-mode]="connectionMode">
+      [ngClass]="{'connection-mode': connectionMode}">
     </canvas>
     
     <div 
@@ -118,15 +115,13 @@
     </div>
   </div>
 
-  <!-- Statistics Panel -->
+  <!-- ⚠️ UPDATED: Use separate components -->
   <app-statistics-panel
     *ngIf="showStats"
     [statistics]="statistics"
-    [machines]="machines"
     (close)="showStats = false">
   </app-statistics-panel>
 
-  <!-- Settings Panel -->
   <app-settings-panel
     *ngIf="showSettings"
     [(simulationSpeed)]="simulationSpeed"

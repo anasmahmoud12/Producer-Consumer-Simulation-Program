@@ -1,7 +1,6 @@
-
 <div class="statistics-panel">
   <div class="panel-header">
-    <h3>Real-Time Statistics</h3>
+    <h3>📊 Real-Time Statistics</h3>
     <button class="btn-close" (click)="onClose()">×</button>
   </div>
   
@@ -46,7 +45,6 @@
           <span class="utilization-value">{{ item.utilization.toFixed(0) }}%</span>
         </div>
       </div>
-      <canvas id="utilizationChart" width="400" height="200"></canvas>
     </div>
     
     <!-- Processed Count by Machine -->
@@ -54,18 +52,31 @@
       <h4>Products Processed by Machine</h4>
       <div class="processed-list">
         <div 
-          *ngFor="let item of statistics.machineProcessedCount | keyvalue" 
+          *ngFor="let item of getProcessedCountArray()" 
           class="processed-item">
-          <span class="machine-id">{{ item.key }}</span>
-          <span class="processed-count">{{ item.value }}</span>
+          <span class="machine-id">{{ item.id }}</span>
+          <div class="processed-bar">
+            <div class="processed-count-badge">{{ item.count }}</div>
+          </div>
         </div>
       </div>
     </div>
     
-    <!-- Throughput Over Time -->
-    <div class="chart-section">
-      <h4>Throughput Over Time</h4>
-      <canvas id="throughputChart" width="400" height="150"></canvas>
+    <!-- Summary Info -->
+    <div class="info-box">
+      <h5>💡 Statistics Info:</h5>
+      <ul>
+        <li><strong>Throughput:</strong> Products per second</li>
+        <li><strong>Utilization:</strong> % of time machine is busy</li>
+        <li><strong>Wait Time:</strong> Average time in queues</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="panel-content" *ngIf="!statistics">
+    <div class="no-data">
+      <p>🔄 No statistics available yet</p>
+      <p class="hint">Start the simulation to see real-time data</p>
     </div>
   </div>
 </div>

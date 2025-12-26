@@ -20,7 +20,6 @@ public class SimulationWebSocketHandler extends TextWebSocketHandler {
         sessions.put(session.getId(), session);
         System.out.println("✅ WebSocket connected: " + session.getId());
 
-        // Send welcome message
         Map<String, Object> message = new HashMap<>();
         message.put("type", "CONNECTED");
         message.put("sessionId", session.getId());
@@ -32,11 +31,11 @@ public class SimulationWebSocketHandler extends TextWebSocketHandler {
         String payload = message.getPayload();
         System.out.println("📨 Received: " + payload);
 
-        // Handle subscription requests
+        @SuppressWarnings("unchecked")
         Map<String, Object> data = objectMapper.readValue(payload, Map.class);
         if ("SUBSCRIBE".equals(data.get("type"))) {
-            // Store subscriptions
             session.getAttributes().put("topics", data.get("topics"));
+            System.out.println("📌 Client subscribed to topics");
         }
     }
 
@@ -46,7 +45,6 @@ public class SimulationWebSocketHandler extends TextWebSocketHandler {
         System.out.println("🔌 WebSocket disconnected: " + session.getId());
     }
 
-    // Method to broadcast messages to all connected clients
     public void broadcast(String topic, Object data) {
         Map<String, Object> message = new HashMap<>();
         message.put("topic", topic);

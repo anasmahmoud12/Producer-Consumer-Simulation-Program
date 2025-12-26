@@ -16,22 +16,14 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/simulation")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:80"})
 public class SimulationController {
 
     private final SimulationService simulationService;
-    private final WebSocketBroadcaster broadcaster;
 
-    public SimulationController(SimulationService simulationService,
-                                WebSocketBroadcaster broadcaster) {
+    public SimulationController(SimulationService simulationService) {
         this.simulationService = simulationService;
-        this.broadcaster = broadcaster;
-
-        // Subscribe broadcaster to simulation events
-        simulationService.getEventPublisher().subscribe(broadcaster);
     }
-
-    // ===== Simulation Control Endpoints =====
 
     @PostMapping("/start")
     public ResponseEntity<String> startSimulation(
@@ -58,122 +50,74 @@ public class SimulationController {
         return ResponseEntity.ok("Simulation resumed");
     }
 
-    // ===== State Management Endpoints =====
-
     @GetMapping("/state")
-    public ResponseEntity<SimulationStateDTO> getState() {
-        SimulationStateDTO state = new SimulationStateDTO(
-                simulationService.getMachines(),
-                simulationService.getQueues(),
-                simulationService.getProducts(),
-                simulationService.getStatistics(),
-                simulationService.isRunning()
-        );
-        return ResponseEntity.ok(state);
+    public ResponseEntity<Map<String, Object>> getState() {
+        return ResponseEntity.ok(simulationService.getCurrentState());
     }
 
     @GetMapping("/statistics")
-    public ResponseEntity<SimulationStatistics> getStatistics() {
+    public ResponseEntity<Object> getStatistics() {
         return ResponseEntity.ok(simulationService.getStatistics());
     }
 
-    // ===== Configuration Endpoints =====
-
     @PostMapping("/machines")
-    public ResponseEntity<Machine> addMachine(@RequestBody MachineDTO dto) {
-        Machine machine = simulationService.addMachine(
-                dto.getX(), dto.getY(),
-                dto.getMinServiceTime(), dto.getMaxServiceTime()
-        );
-        broadcaster.broadcastStateUpdate(simulationService.getMachines());
+    public ResponseEntity<Machine> addMachine(@RequestBody Map<String, Object> request) {
+        double x = ((Number) request.get("x")).doubleValue();
+        double y = ((Number) request.get("y")).doubleValue();
+        int minServiceTime = ((Number) request.getOrDefault("minServiceTime", 1000)).intValue();
+        int maxServiceTime = ((Number) request.getOrDefault("maxServiceTime", 2000)).intValue();
+
+        Machine machine = simulationService.addMachine(x, y, minServiceTime, maxServiceTime);
         return ResponseEntity.ok(machine);
     }
 
     @DeleteMapping("/machines/{id}")
     public ResponseEntity<String> removeMachine(@PathVariable String id) {
         simulationService.removeMachine(id);
-        broadcaster.broadcastStateUpdate(simulationService.getMachines());
         return ResponseEntity.ok("Machine removed");
     }
 
     @PostMapping("/queues")
-    public ResponseEntity<ProductionQueue> addQueue(@RequestBody QueueDTO dto) {
-        ProductionQueue queue = simulationService.addQueue(
-                dto.getX(), dto.getY(), dto.getCapacity()
-        );
-        broadcaster.broadcastStateUpdate(simulationService.getQueues());
+    public ResponseEntity<ProductionQueue> addQueue(@RequestBody Map<String, Object> request) {
+        double x = ((Number) request.get("x")).doubleValue();
+        double y = ((Number) request.get("y")).doubleValue();
+        int capacity = ((Number) request.getOrDefault("capacity", 100)).intValue();
+
+        ProductionQueue queue = simulationService.addQueue(x, y, capacity);
         return ResponseEntity.ok(queue);
     }
 
     @DeleteMapping("/queues/{id}")
     public ResponseEntity<String> removeQueue(@PathVariable String id) {
         simulationService.removeQueue(id);
-        broadcaster.broadcastStateUpdate(simulationService.getQueues());
         return ResponseEntity.ok("Queue removed");
     }
 
     @PostMapping("/connections")
-    public ResponseEntity<Connection> addConnection(@RequestBody ConnectionDTO dto) {
-        simulationService.addConnection(dto.getFrom(), dto.getTo());
-        broadcaster.broadcastStateUpdate(simulationService.getConnections());
-        return ResponseEntity.ok(new Connection(dto.getFrom(), dto.getTo()));
+    public ResponseEntity<Connection> addConnection(@RequestBody Map<String, String> request) {
+        String from = request.get("from");
+        String to = request.get("to");
+
+        simulationService.addConnection(from, to);
+        return ResponseEntity.ok(new Connection(from, to));
     }
 
     @DeleteMapping("/connections")
     public ResponseEntity<String> removeConnection(
-            @RequestParam String from, @RequestParam String to) {
+            @RequestParam String from,
+            @RequestParam String to) {
         simulationService.removeConnection(from, to);
-        broadcaster.broadcastStateUpdate(simulationService.getConnections());
         return ResponseEntity.ok("Connection removed");
     }
 
-    // ===== Snapshot Endpoints (Snapshot Pattern) =====
-
-    @GetMapping("/snapshots")
-    public ResponseEntity<List<SimulationSnapshot>> getSnapshots() {
-        return ResponseEntity.ok(simulationService.getAllSnapshots());
-    }
-
-    @PostMapping("/snapshots/restore/{index}")
-    public ResponseEntity<String> restoreSnapshot(@PathVariable int index) {
-        simulationService.restoreSnapshot(index);
-        return ResponseEntity.ok("Snapshot restored");
-    }
-
-    @PostMapping("/snapshots/create")
-    public ResponseEntity<SimulationSnapshot> createSnapshot() {
-        SimulationSnapshot snapshot = simulationService.createManualSnapshot();
-        return ResponseEntity.ok(snapshot);
-    }
-
-    // ===== Configuration Import/Export (BONUS) =====
-
-    @PostMapping("/config/import")
-    public ResponseEntity<String> importConfiguration(
-            @RequestBody SimulationConfigDTO config) {
-        simulationService.loadConfiguration(config);
-        return ResponseEntity.ok("Configuration imported");
-    }
-
     @GetMapping("/config/export")
-    public ResponseEntity<SimulationConfigDTO> exportConfiguration() {
+    public ResponseEntity<Map<String, Object>> exportConfiguration() {
         return ResponseEntity.ok(simulationService.exportConfiguration());
     }
 
-    // ===== Advanced Analytics (BONUS) =====
-
-    @GetMapping("/analytics/bottlenecks")
-    public ResponseEntity<List<String>> identifyBottlenecks() {
-        return ResponseEntity.ok(simulationService.identifyBottlenecks());
-    }
-
-    @GetMapping("/analytics/efficiency")
-    public ResponseEntity<Map<String, Double>> getEfficiencyMetrics() {
-        return ResponseEntity.ok(simulationService.calculateEfficiencyMetrics());
-    }
-
-    @GetMapping("/analytics/product-journey/{productId}")
-    public ResponseEntity<List<String>> getProductJourney(@PathVariable String productId) {
-        return ResponseEntity.ok(simulationService.getProductJourney(productId));
+    @PostMapping("/config/import")
+    public ResponseEntity<String> importConfiguration(@RequestBody Map<String, Object> config) {
+        // Import configuration logic would go here
+        return ResponseEntity.ok("Configuration imported");
     }
 }

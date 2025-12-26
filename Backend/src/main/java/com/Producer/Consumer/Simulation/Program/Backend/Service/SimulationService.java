@@ -10,6 +10,7 @@ import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.Simulat
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEventPublisher;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Snapshot.SimulationSnapshot;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Snapshot.SnapshotManager;
+import com.Producer.Consumer.Simulation.Program.Backend.Websocket.SimulationWebSocketHandler;
 import com.Producer.Consumer.Simulation.Program.Backend.dto.ConnectionDTO;
 import com.Producer.Consumer.Simulation.Program.Backend.dto.MachineDTO;
 import com.Producer.Consumer.Simulation.Program.Backend.dto.QueueDTO;
@@ -21,311 +22,148 @@ import java.util.concurrent.*;
 import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
 public class SimulationService {
-    private boolean isPaused = false;
+    private final List<Machine> machines = Collections.synchronizedList(new ArrayList<>());
+    private final List<ProductionQueue> queues = Collections.synchronizedList(new ArrayList<>());
+    private final List<Product> products = Collections.synchronizedList(new ArrayList<>());
+    private final List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
 
-    private final List<Machine> machines = new ArrayList<>();
-    private final List<ProductionQueue> queues = new ArrayList<>();
-    private final List<Product> products = new ArrayList<>();
-    private final List<Connection> connections = new ArrayList<>();
+    private final SimulationStatistics statistics = new SimulationStatistics();
+    private final SimulationWebSocketHandler webSocketHandler;
 
-    private final SimulationEventPublisher eventPublisher;
-    private final MachineExecutor machineExecutor;
-    private final SnapshotManager snapshotManager;
-    private final SimulationStatistics statistics;
-
-    private ScheduledExecutorService productGenerator;
     private boolean isRunning = false;
+    private AtomicInteger productCounter = new AtomicInteger(0);
 
-    public SimulationService() {
-        this.eventPublisher = new SimulationEventPublisher();
-        this.machineExecutor = new MachineExecutor(eventPublisher);
-        this.snapshotManager = new SnapshotManager();
-        this.statistics = new SimulationStatistics();
+    public SimulationService(SimulationWebSocketHandler webSocketHandler) {
+        this.webSocketHandler = webSocketHandler;
+        initializeDefaultSetup();
+    }
+
+    private void initializeDefaultSetup() {
+        // Create default queues
+        queues.add(new ProductionQueue("Q0", 100, 200, 100));
+        queues.add(new ProductionQueue("Q1", 500, 200, 100));
+        queues.add(new ProductionQueue("Q2", 900, 200, 100));
+
+        // Create default machines
+        machines.add(new Machine("M1", 300, 200, 1000, 2000));
+        machines.add(new Machine("M2", 700, 200, 1500, 2500));
+
+        // Create default connections
+        connections.add(new Connection("Q0", "M1"));
+        connections.add(new Connection("M1", "Q1"));
+        connections.add(new Connection("Q1", "M2"));
+        connections.add(new Connection("M2", "Q2"));
+
+        System.out.println("✅ Default simulation setup initialized");
     }
 
     public void startSimulation(int productionRate) {
-        if (isRunning) return;
-
         isRunning = true;
         statistics.setSimulationStartTime(System.currentTimeMillis());
+        System.out.println("🚀 Simulation started");
 
-        // Start all machines
-        for (Machine machine : machines) {
-            ProductionQueue inputQueue = getInputQueue(machine.getId());
-            ProductionQueue outputQueue = getOutputQueue(machine.getId());
-            machineExecutor.startMachine(machine, inputQueue, outputQueue);
-        }
-
-        // Start product generation
-        productGenerator = Executors.newScheduledThreadPool(1);
-        productGenerator.scheduleAtFixedRate(
-                this::generateProduct,
-                0,
-                productionRate,
-                TimeUnit.MILLISECONDS
-        );
-
-        // Periodic snapshot creation
-        productGenerator.scheduleAtFixedRate(
-                () -> snapshotManager.saveSnapshot(createSnapshot()),
-                5000,
-                5000,
-                TimeUnit.MILLISECONDS
-        );
+        // Broadcast state update
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
     }
 
     public void stopSimulation() {
         isRunning = false;
-        if (productGenerator != null) {
-            productGenerator.shutdownNow();
-        }
-        machineExecutor.stopAll();
+        System.out.println("⏹️ Simulation stopped");
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
     }
 
-    private void generateProduct() {
-        String[] colors = {"#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899"};
-        String[] types = {"TypeA", "TypeB", "TypeC"}; // BONUS: Product types
-
-        String color = colors[ThreadLocalRandom.current().nextInt(colors.length)];
-        int priority = ThreadLocalRandom.current().nextInt(1, 4);
-        String type = types[ThreadLocalRandom.current().nextInt(types.length)];
-
-        Product product = new Product(color, priority, type);
-        products.add(product);
-
-        if (!queues.isEmpty()) {
-            queues.get(0).addProduct(product);
-            eventPublisher.notifyObservers(
-                    new SimulationEvent("PRODUCT_GENERATED", product)
-            );
-        }
+    public void pauseSimulation() {
+        System.out.println("⏸️ Simulation paused");
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
     }
 
-    private ProductionQueue getInputQueue(String machineId) {
-        return connections.stream()
-                .filter(c -> c.getTo().equals(machineId))
-                .findFirst()
-                .map(c -> queues.stream()
-                        .filter(q -> q.getId().equals(c.getFrom()))
-                        .findFirst()
-                        .orElse(null))
-                .orElse(null);
+    public void resumeSimulation() {
+        System.out.println("▶️ Simulation resumed");
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
     }
 
-    private ProductionQueue getOutputQueue(String machineId) {
-        return connections.stream()
-                .filter(c -> c.getFrom().equals(machineId))
-                .findFirst()
-                .map(c -> queues.stream()
-                        .filter(q -> q.getId().equals(c.getTo()))
-                        .findFirst()
-                        .orElse(null))
-                .orElse(null);
-    }
-
-    private SimulationSnapshot createSnapshot() {
-        return new SimulationSnapshot(
-                machines, queues, products, connections, statistics
-        );
-    }
-
-    public void restoreSnapshot(int index) {
-        SimulationSnapshot snapshot = snapshotManager.getSnapshot(index);
-        if (snapshot != null) {
-            // Restore state from snapshot
-            machines.clear();
-            machines.addAll(snapshot.getMachines());
-            queues.clear();
-            queues.addAll(snapshot.getQueues());
-            products.clear();
-            products.addAll(snapshot.getProducts());
-
-            eventPublisher.notifyObservers(
-                    new SimulationEvent("SNAPSHOT_RESTORED", snapshot)
-            );
-        }
-    }
-
-    // CRUD operations for machines, queues, connections...
-    public Machine addMachine(double x, double y, int minTime, int maxTime) {
+    public Machine addMachine(double x, double y, int minServiceTime, int maxServiceTime) {
         String id = "M" + (machines.size() + 1);
-        Machine machine = new Machine(id, x, y, minTime, maxTime);
+        Machine machine = new Machine(id, x, y, minServiceTime, maxServiceTime);
         machines.add(machine);
+
+        System.out.println("➕ Added machine: " + id);
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
+
         return machine;
+    }
+
+    public void removeMachine(String id) {
+        machines.removeIf(m -> m.getId().equals(id));
+        connections.removeIf(c -> c.getFrom().equals(id) || c.getTo().equals(id));
+
+        System.out.println("➖ Removed machine: " + id);
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
     }
 
     public ProductionQueue addQueue(double x, double y, int capacity) {
         String id = "Q" + queues.size();
         ProductionQueue queue = new ProductionQueue(id, x, y, capacity);
         queues.add(queue);
+
+        System.out.println("➕ Added queue: " + id);
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
+
         return queue;
+    }
+
+    public void removeQueue(String id) {
+        queues.removeIf(q -> q.getId().equals(id));
+        connections.removeIf(c -> c.getFrom().equals(id) || c.getTo().equals(id));
+
+        System.out.println("➖ Removed queue: " + id);
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
     }
 
     public void addConnection(String from, String to) {
         connections.add(new Connection(from, to));
+
+        System.out.println("🔗 Added connection: " + from + " -> " + to);
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
+    }
+
+    public void removeConnection(String from, String to) {
+        connections.removeIf(c -> c.getFrom().equals(from) && c.getTo().equals(to));
+
+        System.out.println("✂️ Removed connection: " + from + " -> " + to);
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
+    }
+
+    public Map<String, Object> getCurrentState() {
+        Map<String, Object> state = new HashMap<>();
+        state.put("machines", new ArrayList<>(machines));
+        state.put("queues", new ArrayList<>(queues));
+        state.put("products", new ArrayList<>(products));
+        state.put("statistics", statistics);
+        state.put("isRunning", isRunning);
+        return state;
+    }
+
+    public Map<String, Object> exportConfiguration() {
+        Map<String, Object> config = new HashMap<>();
+        config.put("productionRate", 2000);
+        config.put("simulationSpeed", 1.0);
+        config.put("machines", new ArrayList<>(machines));
+        config.put("queues", new ArrayList<>(queues));
+        config.put("connections", new ArrayList<>(connections));
+        return config;
     }
 
     // Getters
     public List<Machine> getMachines() { return new ArrayList<>(machines); }
     public List<ProductionQueue> getQueues() { return new ArrayList<>(queues); }
+    public List<Product> getProducts() { return new ArrayList<>(products); }
+    public List<Connection> getConnections() { return new ArrayList<>(connections); }
     public SimulationStatistics getStatistics() { return statistics; }
-    public SimulationEventPublisher getEventPublisher() { return eventPublisher; }
-
-
-    public void pauseSimulation() {
-        isPaused = true;
-        snapshotManager.saveSnapshot(createSnapshot());
-        eventPublisher.notifyObservers(
-                new SimulationEvent("SIMULATION_PAUSED", null)
-        );
-    }
-
-    public void resumeSimulation() {
-        isPaused = false;
-        eventPublisher.notifyObservers(
-                new SimulationEvent("SIMULATION_RESUMED", null)
-        );
-    }
-
-    public boolean isRunning() {
-        return isRunning && !isPaused;
-    }
-
-    public void removeMachine(String id) {
-        machines.removeIf(m -> m.getId().equals(id));
-        connections.removeIf(c ->
-                c.getFrom().equals(id) || c.getTo().equals(id)
-        );
-        machineExecutor.stopMachine(id);
-    }
-
-    public void removeQueue(String id) {
-        queues.removeIf(q -> q.getId().equals(id));
-        connections.removeIf(c ->
-                c.getFrom().equals(id) || c.getTo().equals(id)
-        );
-    }
-
-    public void removeConnection(String from, String to) {
-        connections.removeIf(c ->
-                c.getFrom().equals(from) && c.getTo().equals(to)
-        );
-    }
-
-    public List<Connection> getConnections() {
-        return new ArrayList<>(connections);
-    }
-
-    public List<Product> getProducts() {
-        return new ArrayList<>(products);
-    }
-
-    public List<SimulationSnapshot> getAllSnapshots() {
-        return snapshotManager.getAllSnapshots();
-    }
-
-    public SimulationSnapshot createManualSnapshot() {
-        SimulationSnapshot snapshot = createSnapshot();
-        snapshotManager.saveSnapshot(snapshot);
-        return snapshot;
-    }
-
-    // BONUS: Configuration Import/Export
-    public void loadConfiguration(SimulationConfigDTO config) {
-        stopSimulation();
-        machines.clear();
-        queues.clear();
-        connections.clear();
-
-        config.getMachines().forEach(m ->
-                machines.add(new Machine(m.getId(), m.getX(), m.getY(),
-                        m.getMinServiceTime(), m.getMaxServiceTime()))
-        );
-
-        config.getQueues().forEach(q ->
-                queues.add(new ProductionQueue(q.getId(), q.getX(), q.getY(), q.getCapacity()))
-        );
-
-        config.getConnections().forEach(c ->
-                connections.add(new Connection(c.getFrom(), c.getTo()))
-        );
-    }
-
-    public SimulationConfigDTO exportConfiguration() {
-        List<MachineDTO> machineDTOs = machines.stream()
-                .map(m -> new MachineDTO(m.getId(), m.getX(), m.getY(),
-                        m.getMinServiceTime(), m.getMaxServiceTime(), m.getReliability()))
-                .collect(Collectors.toList());
-
-        List<QueueDTO> queueDTOs = queues.stream()
-                .map(q -> new QueueDTO(q.getId(), q.getX(), q.getY(), q.getCapacity()))
-                .collect(Collectors.toList());
-
-        List<ConnectionDTO> connectionDTOs = connections.stream()
-                .map(c -> new ConnectionDTO(c.getFrom(), c.getTo()))
-                .collect(Collectors.toList());
-
-        return new SimulationConfigDTO(2000, 1.0, machineDTOs, queueDTOs, connectionDTOs);
-    }
-
-    // BONUS: Analytics Methods
-    public List<String> identifyBottlenecks() {
-        List<String> bottlenecks = new ArrayList<>();
-
-        for (ProductionQueue queue : queues) {
-            double avgQueueSize = queue.getProducts().size();
-            if (avgQueueSize > 5) { // Threshold
-                bottlenecks.add("Queue " + queue.getId() +
-                        " has high backlog: " + avgQueueSize + " products");
-            }
-        }
-
-        for (Machine machine : machines) {
-            double utilization = statistics.getMachineUtilization()
-                    .getOrDefault(machine.getId(), 0.0);
-            if (utilization > 90) {
-                bottlenecks.add("Machine " + machine.getId() +
-                        " is over-utilized: " + String.format("%.1f%%", utilization));
-            }
-        }
-
-        return bottlenecks;
-    }
-
-    public Map<String, Double> calculateEfficiencyMetrics() {
-        Map<String, Double> metrics = new HashMap<>();
-
-        metrics.put("overallThroughput", statistics.getThroughput());
-        metrics.put("avgWaitTime", statistics.getAverageWaitTime());
-        metrics.put("totalProducts", (double) statistics.getTotalProductsProcessed());
-
-        double avgUtilization = statistics.getMachineUtilization().values()
-                .stream()
-                .mapToDouble(Double::doubleValue)
-                .average()
-                .orElse(0.0);
-        metrics.put("avgMachineUtilization", avgUtilization);
-
-        return metrics;
-    }
-
-    public List<String> getProductJourney(String productId) {
-        // Track product journey through the system
-        // This would need to be implemented with event logging
-        return new ArrayList<>(); // Placeholder
-    }
-
-
-
-
-
-
-
-
-
+    public boolean isRunning() { return isRunning; }
 }
-

@@ -14,8 +14,6 @@ import com.Producer.Consumer.Simulation.Program.Backend.Models.Product;
 import com.Producer.Consumer.Simulation.Program.Backend.Models.ProductionQueue;
 import com.Producer.Consumer.Simulation.Program.Backend.Service.SimulationStatistics;
 import lombok.Data;
-import java.io.Serializable;
-import java.util.List;
 
 @Data
 public class SimulationSnapshot implements Serializable {
@@ -40,22 +38,28 @@ public class SimulationSnapshot implements Serializable {
         this.machines = deepCopy(machines);
         this.queues = deepCopy(queues);
         this.products = deepCopy(products);
-        this.connections = new ArrayList<>(connections);
-        this.statistics = statistics.copy();
+        this.connections = deepCopy(connections);
+        this.statistics = deepCopy(statistics);
     }
 
-    private <T> List<T> deepCopy(List<T> list) {
+    private <T> T deepCopy(T object) {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(list);
+            oos.writeObject(object);
+            oos.flush();
             oos.close();
 
             ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
             ObjectInputStream ois = new ObjectInputStream(bis);
-            return (List<T>) ois.readObject();
+            @SuppressWarnings("unchecked")
+            T copy = (T) ois.readObject();
+            ois.close();
+
+            return copy;
         } catch (Exception e) {
-            throw new RuntimeException("Deep copy failed", e);
+            throw new RuntimeException("Deep copy failed for object: " +
+                    (object != null ? object.getClass().getName() : "null"), e);
         }
     }
 }

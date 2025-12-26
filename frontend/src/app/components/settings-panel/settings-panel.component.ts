@@ -1,12 +1,13 @@
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-settings-panel',
-  imports: [FormsModule,CommonModule],
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './settings-panel.component.html',
-  styleUrl: './settings-panel.component.css'
+  styleUrls: ['./settings-panel.component.css']
 })
 export class SettingsPanelComponent {
   @Input() simulationSpeed: number = 1;

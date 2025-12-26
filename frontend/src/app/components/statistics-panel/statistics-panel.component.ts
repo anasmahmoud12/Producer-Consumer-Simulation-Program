@@ -1,113 +1,46 @@
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Machine, SimulationStatistics } from '../../models/simulation.models';
-import { Chart, registerables } from 'chart.js';
-
-Chart.register(...registerables);
+import { SimulationStatistics } from '../../models/simulation.models';
 
 @Component({
   selector: 'app-statistics-panel',
-  imports: [FormsModule, CommonModule],
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './statistics-panel.component.html',
-  styleUrl: './statistics-panel.component.css'
+  styleUrls: ['./statistics-panel.component.css']
 })
-export class StatisticsPanelComponent implements OnInit, OnChanges {
+export class StatisticsPanelComponent implements OnChanges {
   @Input() statistics: SimulationStatistics | null = null;
-  @Input() machines: Machine[] = [];
   @Output() close = new EventEmitter<void>();
-
-  utilizationChart: Chart | null = null;
-  throughputChart: Chart | null = null;
-
-  ngOnInit(): void {
-    this.initializeCharts();
-  }
-
-  ngOnChanges(): void {
-    this.updateCharts();
-  }
-
-  private initializeCharts(): void {
-    const utilizationCtx = document.getElementById('utilizationChart') as HTMLCanvasElement;
-    if (utilizationCtx) {
-      this.utilizationChart = new Chart(utilizationCtx, {
-        type: 'bar',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'Utilization %',
-            data: [],
-            backgroundColor: 'rgba(59, 130, 246, 0.8)'
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100
-            }
-          }
-        }
-      });
-    }
-
-    const throughputCtx = document.getElementById('throughputChart') as HTMLCanvasElement;
-    if (throughputCtx) {
-      this.throughputChart = new Chart(throughputCtx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'Products/Second',
-            data: [],
-            borderColor: 'rgba(16, 185, 129, 1)',
-            backgroundColor: 'rgba(16, 185, 129, 0.2)',
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
+  
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['statistics'] && this.statistics) {
+      console.log('Statistics updated:', this.statistics);
     }
   }
-
-  private updateCharts(): void {
-    if (!this.statistics) return;
-
-    if (this.utilizationChart) {
-      const labels = Object.keys(this.statistics.machineUtilization);
-      const data = Object.values(this.statistics.machineUtilization);
-
-      this.utilizationChart.data.labels = labels;
-      this.utilizationChart.data.datasets[0].data = data;
-      this.utilizationChart.update();
-    }
-  }
-
- 
-  getMachineUtilizationArray(): Array<{ id: string; utilization: number }> {
+  
+  getMachineUtilizationArray(): Array<{id: string, utilization: number}> {
     if (!this.statistics) return [];
-
-    return Object.entries(this.statistics.machineUtilization).map(
-      ([id, utilization]) => ({
-        id,
-        utilization
-      })
-    );
+    
+    return Object.entries(this.statistics.machineUtilization).map(([id, util]) => ({
+      id,
+      utilization: util
+    }));
   }
-
+  
+  getProcessedCountArray(): Array<{id: string, count: number}> {
+    if (!this.statistics) return [];
+    
+    return Object.entries(this.statistics.machineProcessedCount).map(([id, count]) => ({
+      id,
+      count
+    }));
+  }
+  
   formatTime(ms: number): string {
     return (ms / 1000).toFixed(2) + 's';
   }
-
+  
   onClose(): void {
     this.close.emit();
   }

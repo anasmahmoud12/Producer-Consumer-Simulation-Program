@@ -2,30 +2,29 @@ package com.Producer.Consumer.Simulation.Program.Backend.Websocket;
 
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEvent;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationObserver;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
-
 
 @Component
 public class WebSocketBroadcaster implements SimulationObserver {
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final SimulationWebSocketHandler webSocketHandler;
 
-    public WebSocketBroadcaster(SimpMessagingTemplate messagingTemplate) {
-        this.messagingTemplate = messagingTemplate;
+    // اعتمدنا على SimulationWebSocketHandler بدل SimpMessagingTemplate
+    public WebSocketBroadcaster(SimulationWebSocketHandler webSocketHandler) {
+        this.webSocketHandler = webSocketHandler;
     }
 
     @Override
     public void update(SimulationEvent event) {
-        // Broadcast event to all connected clients
-        messagingTemplate.convertAndSend("/topic/simulation-events", event);
+        // ارسال الحدث لكل العملاء المتصلين
+        webSocketHandler.broadcast("simulation-events", event);
     }
 
     public void broadcastStateUpdate(Object state) {
-        messagingTemplate.convertAndSend("/topic/state-update", state);
+        webSocketHandler.broadcast("state-update", state);
     }
 
     public void broadcastStatistics(Object statistics) {
-        messagingTemplate.convertAndSend("/topic/statistics", statistics);
+        webSocketHandler.broadcast("statistics", statistics);
     }
 }
