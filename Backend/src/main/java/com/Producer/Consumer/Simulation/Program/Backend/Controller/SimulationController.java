@@ -8,6 +8,7 @@ import com.Producer.Consumer.Simulation.Program.Backend.Service.SimulationServic
 import com.Producer.Consumer.Simulation.Program.Backend.Service.SimulationStatistics;
 import com.Producer.Consumer.Simulation.Program.Backend.Websocket.WebSocketBroadcaster;
 import com.Producer.Consumer.Simulation.Program.Backend.dto.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
@@ -28,27 +29,26 @@ public class SimulationController {
     @PostMapping("/start")
     public ResponseEntity<String> startSimulation(
             @RequestParam(defaultValue = "2000") int productionRate) {
-        System.out.println("-------------------Allowed----------------");
         simulationService.startSimulation(productionRate);
-        return ResponseEntity.ok("Simulation started");
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @PostMapping("/stop")
     public ResponseEntity<String> stopSimulation() {
         simulationService.stopSimulation();
-        return ResponseEntity.ok("Simulation stopped");
+        return ResponseEntity.ok("");
     }
 
     @PostMapping("/pause")
     public ResponseEntity<String> pauseSimulation() {
         simulationService.pauseSimulation();
-        return ResponseEntity.ok("Simulation paused");
+        return ResponseEntity.ok("");
     }
 
     @PostMapping("/resume")
     public ResponseEntity<String> resumeSimulation() {
         simulationService.resumeSimulation();
-        return ResponseEntity.ok("Simulation resumed");
+        return ResponseEntity.ok("");
     }
 
     @GetMapping("/state")
@@ -75,7 +75,7 @@ public class SimulationController {
     @DeleteMapping("/machines/{id}")
     public ResponseEntity<String> removeMachine(@PathVariable String id) {
         simulationService.removeMachine(id);
-        return ResponseEntity.ok("Machine removed");
+        return ResponseEntity.ok("");
     }
 
     @PostMapping("/queues")
@@ -91,7 +91,7 @@ public class SimulationController {
     @DeleteMapping("/queues/{id}")
     public ResponseEntity<String> removeQueue(@PathVariable String id) {
         simulationService.removeQueue(id);
-        return ResponseEntity.ok("Queue removed");
+        return ResponseEntity.ok("");
     }
 
     @PostMapping("/connections")
@@ -109,7 +109,7 @@ public class SimulationController {
             @RequestParam String from,
             @RequestParam String to) {
         simulationService.removeConnection(from, to);
-        return ResponseEntity.ok("Connection removed");
+        return ResponseEntity.ok("");
     }
 
     @GetMapping("/config/export")
@@ -120,6 +120,6 @@ public class SimulationController {
     @PostMapping("/config/import")
     public ResponseEntity<String> importConfiguration(@RequestBody Map<String, Object> config) {
         // Import configuration logic would go here
-        return ResponseEntity.ok("Configuration imported");
+        return ResponseEntity.ok("");
     }
 }

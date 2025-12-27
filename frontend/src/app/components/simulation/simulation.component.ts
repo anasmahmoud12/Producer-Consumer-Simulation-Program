@@ -64,17 +64,6 @@ export class SimulationComponent implements OnInit, OnDestroy {
     );
   }
 
-  test() {
-    this.simulationService.startSimulation().subscribe({
-      next: (res) => {
-        console.log("works: ", res)
-      },
-      error: (err) => {
-        console.log("error also: ", err)
-      }
-    })
-  }
-
   ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     if (this.animationFrame) {
