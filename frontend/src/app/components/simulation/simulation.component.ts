@@ -96,6 +96,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
       next: (state) => {
         this.machines = state.machines;
         this.queues = state.queues;
+        this.connections = state.connections;
         this.statistics = state.statistics;
         this.isRunning = state.isRunning;
         console.log(this.machines, this.queues)
@@ -360,6 +361,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
       const clicked = this.findElementAt(x, y);
 
       if (clicked) {
+        console.log(clicked.id)
         if (!this.connectionStart) {
           this.connectionStart = clicked.id;
         } else {

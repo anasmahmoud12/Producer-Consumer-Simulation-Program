@@ -55,6 +55,7 @@ export interface SimulationState {
   machines: Machine[];
   queues: ProductionQueue[];
   products: Product[];
+  connections: Connection[];
   statistics: SimulationStatistics;
   isRunning: boolean;
 }

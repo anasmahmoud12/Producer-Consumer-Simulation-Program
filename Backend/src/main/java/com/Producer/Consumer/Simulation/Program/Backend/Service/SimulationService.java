@@ -144,6 +144,7 @@ public class SimulationService {
         state.put("machines", new ArrayList<>(machines));
         state.put("queues", new ArrayList<>(queues));
         state.put("products", new ArrayList<>(products));
+        state.put("connections", new ArrayList<>(connections));
         state.put("statistics", statistics);
         state.put("isRunning", isRunning);
         return state;
