@@ -17,6 +17,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(webSocketHandler, "/ws-simulation")
-                .setAllowedOrigins("http://localhost:4200", "http://localhost:80");
+                .setAllowedOrigins("*");
     }
 }

@@ -121,6 +121,7 @@ export class SimulationService {
       
       this.ws.onerror = (error) => {
         console.error('❌ WebSocket error:', error);
+        console.log("here")
         this.connected.next(false);
         this.connectionStatusSubject.next('Error'); // ✅ UPDATE STATUS
       };

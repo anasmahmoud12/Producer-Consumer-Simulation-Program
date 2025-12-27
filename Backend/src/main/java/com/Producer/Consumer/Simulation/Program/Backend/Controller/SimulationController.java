@@ -16,7 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/simulation")
-@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:80"})
+@CrossOrigin(origins = {"*"})
 public class SimulationController {
 
     private final SimulationService simulationService;
@@ -28,6 +28,7 @@ public class SimulationController {
     @PostMapping("/start")
     public ResponseEntity<String> startSimulation(
             @RequestParam(defaultValue = "2000") int productionRate) {
+        System.out.println("-------------------Allowed----------------");
         simulationService.startSimulation(productionRate);
         return ResponseEntity.ok("Simulation started");
     }
@@ -97,6 +98,7 @@ public class SimulationController {
     public ResponseEntity<Connection> addConnection(@RequestBody Map<String, String> request) {
         String from = request.get("from");
         String to = request.get("to");
+        System.out.println("from: " + from + ", to: " + to);
 
         simulationService.addConnection(from, to);
         return ResponseEntity.ok(new Connection(from, to));
