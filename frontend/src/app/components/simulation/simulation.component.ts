@@ -84,11 +84,13 @@ export class SimulationComponent implements OnInit, OnDestroy {
     this.simulationService.getState().subscribe({
       next: (state) => {
         this.machines = state.machines;
+        console.log(state.machines)
         this.queues = state.queues;
+        console.log(state.queues)
         this.connections = state.connections;
+          console.log(state.connections)  ;
         this.statistics = state.statistics;
         this.isRunning = state.isRunning;
-        console.log(this.machines, this.queues)
       },
       error: (error) => {
         console.error('Error loading initial state:', error);
@@ -128,6 +130,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
   private subscribeToUpdates(): void {
     this.subscriptions.push(
       this.simulationService.simulationEvents$.subscribe(event => {
+        console.log('Received event:', event);
         this.handleSimulationEvent(event);
       })
     );
@@ -147,6 +150,8 @@ export class SimulationComponent implements OnInit, OnDestroy {
   }
 
   private handleSimulationEvent(event: SimulationEvent): void {
+          console.log('Handling event type:', event.type);
+
     switch (event.type) {
       case 'MACHINE_PROCESSING':
         const { machine, product } = event.data;

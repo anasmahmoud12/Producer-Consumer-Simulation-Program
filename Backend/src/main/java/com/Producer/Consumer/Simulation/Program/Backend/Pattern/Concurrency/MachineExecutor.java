@@ -11,6 +11,8 @@ import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.Simulat
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationObserver;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
+
 @Component
 public class MachineExecutor implements SimulationObserver {
     private final ExecutorService executorService;
@@ -25,10 +27,17 @@ public class MachineExecutor implements SimulationObserver {
 
     public void startMachine(Machine machine, ProductionQueue inputQueue,
                              ProductionQueue outputQueue) {
+        // Don't start if already running
+        if (runningMachines.containsKey(machine.getId())) {
+            System.out.println("⚠️ Machine " + machine.getId() + " already running");
+            return;
+        }
+
         Future<?> future = executorService.submit(() ->
                 processMachine(machine, inputQueue, outputQueue)
         );
         runningMachines.put(machine.getId(), future);
+        System.out.println("✅ Machine " + machine.getId() + " started");
     }
 
     private void processMachine(Machine machine, ProductionQueue inputQueue,
@@ -65,6 +74,8 @@ public class MachineExecutor implements SimulationObserver {
                 machine.setColor(product.getColor());
                 product.setStatus("processing");
 
+                System.out.println("🔧 Machine " + machine.getId() + " processing " + product.getId());
+
                 eventPublisher.notifyObservers(
                         new SimulationEvent("MACHINE_PROCESSING",
                                 Map.of("machine", machine, "product", product))
@@ -77,6 +88,7 @@ public class MachineExecutor implements SimulationObserver {
                 // BONUS: Machine breakdown simulation
                 if (Math.random() > machine.getReliability()) {
                     machine.setStatus("maintenance");
+                    System.out.println("🔧 Machine " + machine.getId() + " broke down!");
                     eventPublisher.notifyObservers(
                             new SimulationEvent("MACHINE_BREAKDOWN", machine)
                     );
@@ -100,27 +112,37 @@ public class MachineExecutor implements SimulationObserver {
                         machine.getTotalProcessingTime() + (endTime - startTime)
                 );
 
+                System.out.println("✅ Machine " + machine.getId() + " finished " + product.getId());
+
                 // Move to output queue
                 if (outputQueue != null) {
-                    outputQueue.addProduct(product);
-                    product.setStatus("waiting");
+                    boolean added = outputQueue.addProduct(product);
+                    if (added) {
+                        product.setStatus("waiting");
+                        System.out.println("📦 Product " + product.getId() + " moved to " + outputQueue.getId());
 
-                    eventPublisher.notifyObservers(
-                            new SimulationEvent("PRODUCT_MOVED",
-                                    Map.of("machine", machine, "queue", outputQueue, "product", product))
-                    );
+                        eventPublisher.notifyObservers(
+                                new SimulationEvent("PRODUCT_MOVED",
+                                        Map.of("machine", machine, "queue", outputQueue, "product", product))
+                        );
 
-                    // Notify waiting machines (Observer Pattern)
-                    synchronized (outputQueue.getWaitingMachines()) {
-                        for (String machineId : outputQueue.getWaitingMachines()) {
-                            eventPublisher.notifyObservers(
-                                    new SimulationEvent("QUEUE_READY",
-                                            Map.of("queueId", outputQueue.getId(), "machineId", machineId))
-                            );
+                        // Notify waiting machines (Observer Pattern)
+                        synchronized (outputQueue.getWaitingMachines()) {
+                            for (String machineId : outputQueue.getWaitingMachines()) {
+                                eventPublisher.notifyObservers(
+                                        new SimulationEvent("QUEUE_READY",
+                                                Map.of("queueId", outputQueue.getId(), "machineId", machineId))
+                                );
+                            }
                         }
+                    } else {
+                        System.out.println("⚠️ Output queue " + outputQueue.getId() + " is full!");
+                        // Put product back in input queue
+                        inputQueue.addProduct(product);
                     }
                 } else {
                     product.setStatus("completed");
+                    System.out.println("🎉 Product " + product.getId() + " completed!");
                 }
 
                 machine.setCurrentProduct(null);
@@ -128,10 +150,15 @@ public class MachineExecutor implements SimulationObserver {
                 machine.setColor("#94a3b8");
 
             } catch (InterruptedException e) {
+                System.out.println("🛑 Machine " + machine.getId() + " interrupted");
                 Thread.currentThread().interrupt();
                 break;
+            } catch (Exception e) {
+                System.err.println("❌ Error in machine " + machine.getId() + ": " + e.getMessage());
+                e.printStackTrace();
             }
         }
+        System.out.println("🛑 Machine " + machine.getId() + " stopped");
     }
 
     public void stopMachine(String machineId) {
@@ -139,12 +166,31 @@ public class MachineExecutor implements SimulationObserver {
         if (future != null) {
             future.cancel(true);
             runningMachines.remove(machineId);
+            System.out.println("🛑 Stopped machine: " + machineId);
         }
     }
 
     public void stopAll() {
+        System.out.println("🛑 Stopping all machines...");
         runningMachines.values().forEach(future -> future.cancel(true));
         runningMachines.clear();
+    }
+
+    // Cleanup when application shuts down
+    @PreDestroy
+    public void shutdown() {
+        System.out.println("🛑 Shutting dow" +
+                "n MachineExecutor...");
+        stopAll();
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override

@@ -179,7 +179,7 @@ export class SimulationService {
     }
   }
   
-  // ===== Simulation Control =====
+
   
   startSimulation(productionRate: number = 2000): Observable<string> {
     return this.http.post<string>(

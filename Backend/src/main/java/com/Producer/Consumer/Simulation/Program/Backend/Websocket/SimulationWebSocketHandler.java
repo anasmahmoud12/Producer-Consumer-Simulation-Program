@@ -45,18 +45,49 @@ public class SimulationWebSocketHandler extends TextWebSocketHandler {
         System.out.println("🔌 WebSocket disconnected: " + session.getId());
     }
 
-    public void broadcast(String topic, Object data) {
+//    public void broadcast(String topic, Object data) {
+//        Map<String, Object> message = new HashMap<>();
+//        message.put("topic", topic);
+//        message.put("data", data);
+//
+//        sessions.values().forEach(session -> {
+//            try {
+//                if (session.isOpen()) {
+//                    session.sendMessage(new TextMessage(objectMapper.writeValueAsString(message)));
+//                }
+//            } catch (Exception e) {
+//                System.err.println("Error broadcasting to session: " + e.getMessage());
+//            }
+//        });
+//    }
+// Replace the broadcast method in SimulationWebSocketHandler.java with this:
+
+    public synchronized void broadcast(String topic, Object data) {
         Map<String, Object> message = new HashMap<>();
         message.put("topic", topic);
         message.put("data", data);
 
+        String jsonMessage;
+        try {
+            jsonMessage = objectMapper.writeValueAsString(message);
+        } catch (Exception e) {
+            System.err.println("❌ Error serializing message: " + e.getMessage());
+            return;
+        }
+
         sessions.values().forEach(session -> {
-            try {
-                if (session.isOpen()) {
-                    session.sendMessage(new TextMessage(objectMapper.writeValueAsString(message)));
+            if (session.isOpen()) {
+                try {
+                    synchronized (session) {
+                        session.sendMessage(new TextMessage(jsonMessage));
+                    }
+                } catch (Exception e) {
+                    // Only log if it's NOT the TEXT_PARTIAL_WRITING error
+                    if (e.getMessage() == null || !e.getMessage().contains("TEXT_PARTIAL_WRITING")) {
+                        System.err.println("❌ Error broadcasting to session: " + e.getMessage());
+                    }
+                    // Otherwise silently skip - next update will arrive soon
                 }
-            } catch (Exception e) {
-                System.err.println("Error broadcasting to session: " + e.getMessage());
             }
         });
     }
