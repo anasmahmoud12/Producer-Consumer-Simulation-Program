@@ -7,8 +7,12 @@ import com.Producer.Consumer.Simulation.Program.Backend.Models.ProductionQueue;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Concurrency.MachineExecutor;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEvent;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEventPublisher;
+import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Snapshot.SnapshotManager;
 import com.Producer.Consumer.Simulation.Program.Backend.Websocket.SimulationWebSocketHandler;
 import org.springframework.stereotype.Service;
+import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Snapshot.SimulationSnapshot;
+import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Snapshot.SnapshotManager;
+import java.util.Date;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -33,6 +37,9 @@ public class SimulationService {
     private boolean isRunning = false;
     private AtomicInteger productCounter = new AtomicInteger(0);
 
+    private final SnapshotManager snapshotManager = new SnapshotManager();
+    private ScheduledExecutorService snapshotExecutor;
+    private ScheduledFuture<?> snapshotTask;
     public SimulationService(SimulationWebSocketHandler webSocketHandler,
                              MachineExecutor machineExecutor,
                              SimulationEventPublisher eventPublisher) {
@@ -83,6 +90,7 @@ public class SimulationService {
 
         // Start all machines
         startAllMachines();
+        startAutoSnapshots();
 
         // Broadcast state update
         webSocketHandler.broadcast("/topic/state-update", getCurrentState());
@@ -202,7 +210,8 @@ public class SimulationService {
 
         // Stop all machines
         machineExecutor.stopAll();
-
+        stopAutoSnapshots();
+        createSnapshot();
         webSocketHandler.broadcast("/topic/state-update", getCurrentState());
     }
 
@@ -310,6 +319,123 @@ public class SimulationService {
         config.put("connections", new ArrayList<>(connections));
         return config;
     }
+
+    private void startAutoSnapshots() {
+        // Save a snapshot every 5 seconds during simulation
+        snapshotExecutor = Executors.newScheduledThreadPool(1);
+        snapshotTask = snapshotExecutor.scheduleAtFixedRate(
+                this::createSnapshot,
+                5, 5,
+                TimeUnit.SECONDS
+        );
+        System.out.println("📸 Auto-snapshots started (every 5 seconds)");
+    }
+
+    private void stopAutoSnapshots() {
+        if (snapshotTask != null) {
+            snapshotTask.cancel(false);
+        }
+        if (snapshotExecutor != null) {
+            snapshotExecutor.shutdown();
+            try {
+                if (!snapshotExecutor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    snapshotExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                snapshotExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+        System.out.println("📸 Auto-snapshots stopped");
+    }
+
+    public void createSnapshot() {
+        try {
+            SimulationSnapshot snapshot = new SimulationSnapshot(
+                    new ArrayList<>(machines),
+                    new ArrayList<>(queues),
+                    new ArrayList<>(products),
+                    new ArrayList<>(connections),
+                    statistics
+            );
+            snapshotManager.saveSnapshot(snapshot);
+            System.out.println("📸 Snapshot created at " + new Date(snapshot.getTimestamp()));
+        } catch (Exception e) {
+            System.err.println("❌ Failed to create snapshot: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public List<SimulationSnapshot> getAllSnapshots() {
+        return snapshotManager.getAllSnapshots();
+    }
+
+    public void restoreSnapshot(int index) {
+        SimulationSnapshot snapshot = snapshotManager.getSnapshot(index);
+        System.out.println(snapshot.getProducts().size());
+        if (snapshot == null) {
+            System.out.println(",,");
+            throw new IllegalArgumentException("Snapshot not found at index: " + index);
+        }
+
+        System.out.println("📼 Restoring snapshot from " + new Date(snapshot.getTimestamp()));
+
+        // Stop simulation if running
+        boolean wasRunning = isRunning;
+        if (isRunning) {
+            stopSimulation();
+            // Wait a bit for threads to stop
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // Clear current state
+        machines.clear();
+        queues.clear();
+        products.clear();
+        connections.clear();
+
+        // Restore from snapshot
+        machines.addAll(snapshot.getMachines());
+        queues.addAll(snapshot.getQueues());
+        products.addAll(snapshot.getProducts());
+        connections.addAll(snapshot.getConnections());
+
+        // Restore statistics
+        if (snapshot.getStatistics() != null) {
+            statistics.setTotalProductsProcessed(snapshot.getStatistics().getTotalProductsProcessed());
+            statistics.setAverageWaitTime(snapshot.getStatistics().getAverageWaitTime());
+            statistics.setAverageProcessingTime(snapshot.getStatistics().getAverageProcessingTime());
+            statistics.setMachineUtilization(new HashMap<>(snapshot.getStatistics().getMachineUtilization()));
+            statistics.setMachineProcessedCount(new HashMap<>(snapshot.getStatistics().getMachineProcessedCount()));
+            statistics.setThroughput(snapshot.getStatistics().getThroughput());
+            statistics.setTotalProductsInSystem(snapshot.getStatistics().getTotalProductsInSystem());
+            statistics.setSimulationStartTime(snapshot.getStatistics().getSimulationStartTime());
+        }
+
+        System.out.println("✅ Snapshot restored successfully");
+
+        // Broadcast updated state to frontend
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
+        webSocketHandler.broadcast("/topic/statistics", statistics);
+    }
+
+    public void deleteSnapshot(int index) {
+        // Since SnapshotManager doesn't have delete by index, we'll skip for now
+        // or implement if needed
+        System.out.println("🗑️ Snapshot delete requested at index: " + index);
+    }
+
+    public void clearSnapshots() {
+        snapshotManager.clear();
+        System.out.println("🗑️ All snapshots cleared");
+    }
+
+
+
 
     // Getters
     public List<Machine> getMachines() { return new ArrayList<>(machines); }

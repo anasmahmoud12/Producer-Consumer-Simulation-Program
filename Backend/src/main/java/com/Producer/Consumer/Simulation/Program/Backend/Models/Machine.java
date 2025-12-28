@@ -2,12 +2,16 @@ package com.Producer.Consumer.Simulation.Program.Backend.Models;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Machine {
+public class Machine implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String id;
     private double x;
     private double y;

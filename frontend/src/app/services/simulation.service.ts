@@ -244,14 +244,38 @@ export class SimulationService {
     return this.http.get<any[]>(`${this.apiUrl}/snapshots`);
   }
   
+  // restoreSnapshot(index: number): Observable<string> {
+  //   return this.http.post<string>(`${this.apiUrl}/snapshots/restore/${index}`, {});
+  // }
+  
+  // createSnapshot(): Observable<any> {
+  //   return this.http.post<any>(`${this.apiUrl}/snapshots/create`, {});
+  // }
+  // clearSnapshots(): Observable<string> {
+  //   return this.http.delete<string>(`${this.apiUrl}/snapshots/clear`);
+  // }
   restoreSnapshot(index: number): Observable<string> {
-    return this.http.post<string>(`${this.apiUrl}/snapshots/restore/${index}`, {});
-  }
-  
-  createSnapshot(): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/snapshots/create`, {});
-  }
-  
+  return this.http.post(
+    `${this.apiUrl}/snapshots/restore/${index}`, 
+    {},
+    { responseType: 'text' }  // ✅ FIXED: Expect text response, not JSON
+  );
+}
+
+createSnapshot(): Observable<string> {
+  return this.http.post(
+    `${this.apiUrl}/snapshots/create`, 
+    {},
+    { responseType: 'text' }  // ✅ FIXED: Expect text response, not JSON
+  );
+}
+
+clearSnapshots(): Observable<string> {
+  return this.http.delete(
+    `${this.apiUrl}/snapshots/clear`,
+    { responseType: 'text' }  // ✅ FIXED: Expect text response, not JSON
+  );
+}
   // ===== Import/Export =====
   
   exportConfiguration(): Observable<any> {

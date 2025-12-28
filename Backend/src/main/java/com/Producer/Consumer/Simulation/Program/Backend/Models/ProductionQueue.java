@@ -3,13 +3,16 @@ import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductionQueue {
+public class ProductionQueue implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String id;
     private double x;
     private double y;

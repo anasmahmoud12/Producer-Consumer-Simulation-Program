@@ -4,13 +4,16 @@ package com.Producer.Consumer.Simulation.Program.Backend.Service;
 import lombok.Data;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.util.*;
 
 import java.util.HashMap;
 import java.util.Map;
 @Service
 
-public class SimulationStatistics {
+public class SimulationStatistics implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private int totalProductsProcessed;
     private double averageWaitTime;
     private double averageProcessingTime;

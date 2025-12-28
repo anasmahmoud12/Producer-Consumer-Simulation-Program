@@ -116,8 +116,12 @@ public class MachineExecutor implements SimulationObserver {
 
                 // Move to output queue
                 if (outputQueue != null) {
+                    System.out.println("11");
+                    System.out.println(outputQueue.getProducts().size());
                     boolean added = outputQueue.addProduct(product);
                     if (added) {
+                        System.out.println("111");
+                        System.out.println(outputQueue.getProducts().size());
                         product.setStatus("waiting");
                         System.out.println("📦 Product " + product.getId() + " moved to " + outputQueue.getId());
 

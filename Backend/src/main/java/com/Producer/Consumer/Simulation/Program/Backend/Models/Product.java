@@ -4,13 +4,19 @@ package com.Producer.Consumer.Simulation.Program.Backend.Models;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
- public class Product {
-    private static final AtomicInteger counter = new AtomicInteger(0);
+ public class Product implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    // ⚠️ IMPORTANT: Make counter transient
+    private static final transient AtomicInteger counter = new AtomicInteger(0);
+//    private static final AtomicInteger counter = new AtomicInteger(0);
 
     private String id;
     private String color;

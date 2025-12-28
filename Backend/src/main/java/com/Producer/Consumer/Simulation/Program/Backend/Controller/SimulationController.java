@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
+
 import java.util.List;
 import java.util.Map;
 
@@ -121,5 +122,48 @@ public class SimulationController {
     public ResponseEntity<String> importConfiguration(@RequestBody Map<String, Object> config) {
         // Import configuration logic would go here
         return ResponseEntity.ok("");
+    }
+
+
+    @GetMapping("/snapshots")
+    public ResponseEntity<List<SimulationSnapshot>> getAllSnapshots() {
+        return ResponseEntity.ok(simulationService.getAllSnapshots());
+    }
+
+    @PostMapping("/snapshots/create")
+    public ResponseEntity<String> createSnapshot() {
+        try {
+            simulationService.createSnapshot();
+            return ResponseEntity.ok("Snapshot created successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to create snapshot: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/snapshots/restore/{index}")
+    public ResponseEntity<String> restoreSnapshot(@PathVariable int index) {
+        try {
+            System.out.println(index);
+            simulationService.restoreSnapshot(index);
+            return ResponseEntity.ok("Snapshot restored successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to restore snapshot: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/snapshots/clear")
+    public ResponseEntity<String> clearSnapshots() {
+        try {
+            simulationService.clearSnapshots();
+            return ResponseEntity.ok("All snapshots cleared");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to clear snapshots: " + e.getMessage());
+        }
     }
 }

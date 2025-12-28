@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SimulationService } from '../../services/simulation.service';
+import { ReplayPanelComponent } from '../replay-panel.component';
 import {
   Machine,
   ProductionQueue,
@@ -21,7 +22,8 @@ import { SettingsPanelComponent } from '../settings-panel/settings-panel.compone
     CommonModule,
     FormsModule,
     StatisticsPanelComponent,  // ✅ Add this
-    SettingsPanelComponent     // ✅ Add this
+    SettingsPanelComponent  ,   // ✅ Add this
+    ReplayPanelComponent
   ],
   templateUrl: './simulation.component.html',
   styleUrls: ['./simulation.component.css']
@@ -41,7 +43,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
   connectionMode = false;
   connectionStart: string | null = null;
   connectionStatus = 'Checking...';
-
+  showReplay = false;
   simulationSpeed = 1;
   productionRate = 2000;
 
@@ -307,10 +309,17 @@ export class SimulationComponent implements OnInit, OnDestroy {
     }
   }
 
-  replaySimulation(): void {
-    alert('Replay functionality requires backend implementation');
-  }
+  // replaySimulation(): void {
+  //   alert('Replay functionality requires backend implementation');
+  // }
 
+replaySimulation(): void {
+  this.showReplay = true;
+}
+
+toggleReplay(): void {
+  this.showReplay = !this.showReplay;
+}
   addMachine(): void {
     const machine = {
       x: 300 + Math.random() * 400,
@@ -414,4 +423,27 @@ export class SimulationComponent implements OnInit, OnDestroy {
   toggleSettings(): void {
     this.showSettings = !this.showSettings;
   }
+
+  onSnapshotRestored(): void {
+  console.log('📼 Snapshot restored, reloading state...');
+  
+  // Reload the state from backend
+  this.simulationService.getState().subscribe({
+    next: (state) => {
+      this.machines = state.machines;
+      this.queues = state.queues;
+      this.connections = state.connections;
+      this.statistics = state.statistics;
+      this.isRunning = state.isRunning;
+      
+      console.log('✅ State reloaded successfully');
+      console.log('Machines:', this.machines);
+      console.log('Queues:', this.queues);
+    },
+    error: (error) => {
+      console.error('❌ Error reloading state:', error);
+      alert('Snapshot restored but failed to reload display. Please refresh the page.');
+    }
+  });
+}
 }

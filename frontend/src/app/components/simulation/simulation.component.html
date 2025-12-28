@@ -129,4 +129,9 @@
     [disabled]="isRunning"
     (close)="showSettings = false">
   </app-settings-panel>
+<app-replay-panel
+  *ngIf="showReplay"
+  (close)="showReplay = false"
+  (snapshotRestored)="onSnapshotRestored()">
+</app-replay-panel>
 </div>
