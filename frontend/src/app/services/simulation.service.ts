@@ -2,6 +2,30 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, Subject } from 'rxjs';
 
+// ============================================================================
+// UPDATED FRONTEND MODELS - WITH START/END
+// ============================================================================
+
+// FILE: src/app/models/simulation.models.ts
+
+export interface SimulationNode {
+  id: string;
+  x: number;
+  y: number;
+  type: 'start' | 'end' | 'machine' | 'queue';
+}
+
+export interface StartNode extends SimulationNode {
+  type: 'start';
+  totalProductsToGenerate: number;
+  generatedCount: number;
+}
+
+export interface EndNode extends SimulationNode {
+  type: 'end';
+  completedProducts: Product[];
+}
+
 export interface Product {
   id: string;
   color: string;
@@ -12,10 +36,8 @@ export interface Product {
   productType: string;
 }
 
-export interface Machine {
-  id: string;
-  x: number;
-  y: number;
+export interface Machine extends SimulationNode {
+  type: 'machine';
   minServiceTime: number;
   maxServiceTime: number;
   status: string;
@@ -24,20 +46,24 @@ export interface Machine {
   processedCount: number;
   totalProcessingTime: number;
   reliability: number;
+  inputQueueIds: string[];      // ✅ Can have multiple inputs
+  outputQueueId: string | null; // ✅ Only one output
 }
 
-export interface ProductionQueue {
-  id: string;
-  x: number;
-  y: number;
+export interface ProductionQueue extends SimulationNode {
+  type: 'queue';
   capacity: number;
   products: Product[];
   waitingMachines: string[];
+  inputMachineId: string | null;  // ✅ Only one input
+  outputMachineIds: string[];     // ✅ Can have multiple outputs
 }
 
 export interface Connection {
   from: string;
   to: string;
+  fromType?: string;
+  toType?: string;
 }
 
 export interface SimulationStatistics {
@@ -52,6 +78,8 @@ export interface SimulationStatistics {
 }
 
 export interface SimulationState {
+  startNode: StartNode;         // ✅ NEW
+  endNode: EndNode;             // ✅ NEW
   machines: Machine[];
   queues: ProductionQueue[];
   products: Product[];
@@ -66,6 +94,39 @@ export interface SimulationEvent {
   timestamp: number;
 }
 
+export interface ProductInfo {
+  total: number;
+  generated: number;
+  completed: number;
+}
+
+export interface ConnectionRules {
+  machine: {
+    inputs: string;
+    outputs: string;
+    note: string;
+  };
+  queue: {
+    inputs: string;
+    outputs: string;
+    note: string;
+  };
+  start: {
+    inputs: string;
+    outputs: string;
+    note: string;
+  };
+  end: {
+    inputs: string;
+    outputs: string;
+    note: string;
+  };
+  validPaths: string[];
+}
+
+// Helper type for any node
+export type AnyNode = StartNode | EndNode | Machine | ProductionQueue;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -78,7 +139,7 @@ export class SimulationService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   
-  // ✅ ADD THIS: Connection status observable
+  // Connection status observable
   private connectionStatusSubject = new BehaviorSubject<string>('Disconnected');
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
   
@@ -91,17 +152,19 @@ export class SimulationService {
     this.connectWebSocket();
   }
   
-  // ===== WebSocket Connection =====
+  // ============================================================================
+  // WEBSOCKET CONNECTION (KEPT FROM OLD SERVICE - NO CHANGES)
+  // ============================================================================
   
   private connectWebSocket(): void {
     try {
-      this.connectionStatusSubject.next('Connecting...'); // ✅ UPDATE STATUS
+      this.connectionStatusSubject.next('Connecting...');
       this.ws = new WebSocket(this.wsUrl);
       
       this.ws.onopen = () => {
         console.log('✅ WebSocket connected');
         this.connected.next(true);
-        this.connectionStatusSubject.next('Connected'); // ✅ UPDATE STATUS
+        this.connectionStatusSubject.next('Connected');
         this.reconnectAttempts = 0;
         
         // Subscribe to topics
@@ -124,27 +187,27 @@ export class SimulationService {
         console.error('❌ WebSocket error:', error);
         console.log("here")
         this.connected.next(false);
-        this.connectionStatusSubject.next('Error'); // ✅ UPDATE STATUS
+        this.connectionStatusSubject.next('Error');
       };
       
       this.ws.onclose = () => {
         console.log('🔌 WebSocket disconnected');
         this.connected.next(false);
-        this.connectionStatusSubject.next('Disconnected'); // ✅ UPDATE STATUS
+        this.connectionStatusSubject.next('Disconnected');
         
         // Attempt to reconnect
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
           console.log(`🔄 Reconnecting... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-          this.connectionStatusSubject.next(`Reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`); // ✅ UPDATE STATUS
+          this.connectionStatusSubject.next(`Reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
           setTimeout(() => this.connectWebSocket(), 3000);
         } else {
-          this.connectionStatusSubject.next('Connection Failed'); // ✅ UPDATE STATUS
+          this.connectionStatusSubject.next('Connection Failed');
         }
       };
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
-      this.connectionStatusSubject.next('Connection Failed'); // ✅ UPDATE STATUS
+      this.connectionStatusSubject.next('Connection Failed');
     }
   }
   
@@ -179,7 +242,9 @@ export class SimulationService {
     }
   }
   
-
+  // ============================================================================
+  // SIMULATION CONTROL
+  // ============================================================================
   
   startSimulation(productionRate: number = 2000): Observable<string> {
     return this.http.post<string>(
@@ -200,7 +265,9 @@ export class SimulationService {
     return this.http.post<string>(`${this.apiUrl}/resume`, {});
   }
   
-  // ===== State Management =====
+  // ============================================================================
+  // STATE & STATISTICS
+  // ============================================================================
   
   getState(): Observable<SimulationState> {
     return this.http.get<SimulationState>(`${this.apiUrl}/state`);
@@ -210,7 +277,37 @@ export class SimulationService {
     return this.http.get<SimulationStatistics>(`${this.apiUrl}/statistics`);
   }
   
-  // ===== Configuration =====
+  // ============================================================================
+  // START/END NODE MANAGEMENT (✅ ADDED FROM NEW SERVICE)
+  // ============================================================================
+  
+  setTotalProducts(total: number): Observable<string> {
+    return this.http.post<string>(`${this.apiUrl}/start-node/products?total=${total}`, {});
+  }
+  
+  getProductInfo(): Observable<ProductInfo> {
+    return this.http.get<ProductInfo>(`${this.apiUrl}/start-node/products`);
+  }
+  
+  getStartNode(): Observable<StartNode> {
+    return this.http.get<StartNode>(`${this.apiUrl}/start-node`);
+  }
+  
+  getEndNode(): Observable<EndNode> {
+    return this.http.get<EndNode>(`${this.apiUrl}/end-node`);
+  }
+  
+  // ============================================================================
+  // POSITION UPDATE (✅ ADDED FROM NEW SERVICE - FOR DRAG & DROP)
+  // ============================================================================
+  
+  updatePosition(id: string, x: number, y: number): Observable<string> {
+    return this.http.put<string>(`${this.apiUrl}/position`, { id, x, y });
+  }
+  
+  // ============================================================================
+  // MACHINE & QUEUE MANAGEMENT
+  // ============================================================================
   
   addMachine(machine: Partial<Machine>): Observable<Machine> {
     return this.http.post<Machine>(`${this.apiUrl}/machines`, machine);
@@ -228,8 +325,12 @@ export class SimulationService {
     return this.http.delete<string>(`${this.apiUrl}/queues/${id}`);
   }
   
-  addConnection(from: string, to: string): Observable<Connection> {
-    return this.http.post<Connection>(`${this.apiUrl}/connections`, { from, to });
+  // ============================================================================
+  // CONNECTION MANAGEMENT (✅ UPDATED FROM NEW SERVICE - WITH VALIDATION)
+  // ============================================================================
+  
+  addConnection(from: string, to: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/connections`, { from, to });
   }
   
   removeConnection(from: string, to: string): Observable<string> {
@@ -238,45 +339,50 @@ export class SimulationService {
     );
   }
   
-  // ===== Snapshot Management =====
+  // ✅ ADDED: Validate connection before creating
+  validateConnection(from: string, to: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/connections/validate?from=${from}&to=${to}`);
+  }
+  
+  // ✅ ADDED: Get connection rules
+  getConnectionRules(): Observable<ConnectionRules> {
+    return this.http.get<ConnectionRules>(`${this.apiUrl}/connection-rules`);
+  }
+  
+  // ============================================================================
+  // SNAPSHOT MANAGEMENT (KEPT FROM OLD SERVICE)
+  // ============================================================================
   
   getSnapshots(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/snapshots`);
   }
   
-  // restoreSnapshot(index: number): Observable<string> {
-  //   return this.http.post<string>(`${this.apiUrl}/snapshots/restore/${index}`, {});
-  // }
-  
-  // createSnapshot(): Observable<any> {
-  //   return this.http.post<any>(`${this.apiUrl}/snapshots/create`, {});
-  // }
-  // clearSnapshots(): Observable<string> {
-  //   return this.http.delete<string>(`${this.apiUrl}/snapshots/clear`);
-  // }
   restoreSnapshot(index: number): Observable<string> {
-  return this.http.post(
-    `${this.apiUrl}/snapshots/restore/${index}`, 
-    {},
-    { responseType: 'text' }  // ✅ FIXED: Expect text response, not JSON
-  );
-}
-
-createSnapshot(): Observable<string> {
-  return this.http.post(
-    `${this.apiUrl}/snapshots/create`, 
-    {},
-    { responseType: 'text' }  // ✅ FIXED: Expect text response, not JSON
-  );
-}
-
-clearSnapshots(): Observable<string> {
-  return this.http.delete(
-    `${this.apiUrl}/snapshots/clear`,
-    { responseType: 'text' }  // ✅ FIXED: Expect text response, not JSON
-  );
-}
-  // ===== Import/Export =====
+    return this.http.post(
+      `${this.apiUrl}/snapshots/restore/${index}`, 
+      {},
+      { responseType: 'text' }
+    );
+  }
+  
+  createSnapshot(): Observable<string> {
+    return this.http.post(
+      `${this.apiUrl}/snapshots/create`, 
+      {},
+      { responseType: 'text' }
+    );
+  }
+  
+  clearSnapshots(): Observable<string> {
+    return this.http.delete(
+      `${this.apiUrl}/snapshots/clear`,
+      { responseType: 'text' }
+    );
+  }
+  
+  // ============================================================================
+  // IMPORT/EXPORT CONFIGURATION
+  // ============================================================================
   
   exportConfiguration(): Observable<any> {
     return this.http.get(`${this.apiUrl}/config/export`);
@@ -286,7 +392,9 @@ clearSnapshots(): Observable<string> {
     return this.http.post<string>(`${this.apiUrl}/config/import`, config);
   }
   
-  // ===== Analytics =====
+  // ============================================================================
+  // ANALYTICS (KEPT FROM OLD SERVICE)
+  // ============================================================================
   
   getBottlenecks(): Observable<string[]> {
     return this.http.get<string[]>(`${this.apiUrl}/analytics/bottlenecks`);

@@ -9,9 +9,10 @@ import com.Producer.Consumer.Simulation.Program.Backend.Models.ProductionQueue;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEvent;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEventPublisher;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationObserver;
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PreDestroy;
+//import javax.annotation.PreDestroy;
 
 @Component
 public class MachineExecutor implements SimulationObserver {
@@ -183,7 +184,7 @@ public class MachineExecutor implements SimulationObserver {
     // Cleanup when application shuts down
     @PreDestroy
     public void shutdown() {
-        System.out.println("🛑 Shutting dow" +
+        System.out.println(" Shutting dow" +
                 "n MachineExecutor...");
         stopAll();
         executorService.shutdown();

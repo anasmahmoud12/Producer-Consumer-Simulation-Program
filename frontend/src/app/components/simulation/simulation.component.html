@@ -35,15 +35,9 @@
       </button>
       
       <ng-container *ngIf="isRunning">
-        <!-- <button 
-          class="btn btn-warning"
-          (click)="pauseSimulation()">
-          {{ isPaused ? '▶️ Resume' : '⏸️ Pause' }}
-        </button> -->
         <button 
           class="btn btn-danger"
           (click)="stopSimulation()">
-          <!-- dah kan el stop -->
           ⏹️ Pause
         </button>
       </ng-container>
@@ -86,11 +80,16 @@
 
   <!-- Main Canvas Area -->
   <div class="canvas-container">
+    <!-- ✅ UPDATED: Added mousedown, mousemove, mouseup handlers for dragging -->
     <canvas 
       #canvas 
       (click)="onCanvasClick($event)"
-      [ngClass]="{'connection-mode': connectionMode}"
-      [style.cursor]="(isAddingMachine || isAddingQueue) ? 'crosshair' : 'default'">
+      (mousedown)="onCanvasMouseDown($event)"
+      (mousemove)="onCanvasMouseMove($event)"
+      (mouseup)="onCanvasMouseUp($event)"
+      (mouseleave)="onCanvasMouseUp($event)"
+      [ngClass]="{'connection-mode': connectionMode, 'dragging': isDragging}"
+      [style.cursor]="getCursorStyle()">
     </canvas>
     
     <div 
@@ -99,9 +98,19 @@
       {{ connectionStart ? 'Click destination element' : 'Click source element' }}
     </div>
 
+    <div 
+      *ngIf="isDragging" 
+      class="drag-hint">
+      Dragging {{ draggedElement?.id }}... Release to place
+    </div>
+
     <!-- Legend -->
     <div class="legend">
       <h4>Legend</h4>
+      <div class="legend-item">
+        <div class="legend-icon start-node"></div>
+        <span>START (Product Generator)</span>
+      </div>
       <div class="legend-item">
         <div class="legend-icon queue"></div>
         <span>Queue (shows product count)</span>
@@ -114,10 +123,13 @@
         <div class="legend-icon machine processing"></div>
         <span>Machine (processing)</span>
       </div>
+      <div class="legend-item">
+        <div class="legend-icon end-node"></div>
+        <span>END (Product Collector)</span>
+      </div>
     </div>
   </div>
 
-  <!-- ⚠️ UPDATED: Use separate components -->
   <app-statistics-panel
     *ngIf="showStats"
     [statistics]="statistics"
@@ -131,9 +143,10 @@
     [disabled]="isRunning"
     (close)="showSettings = false">
   </app-settings-panel>
-<app-replay-panel
-  *ngIf="showReplay"
-  (close)="showReplay = false"
-  (snapshotRestored)="onSnapshotRestored()">
-</app-replay-panel>
+
+  <app-replay-panel
+    *ngIf="showReplay"
+    (close)="showReplay = false"
+    (snapshotRestored)="onSnapshotRestored()">
+  </app-replay-panel>
 </div>

@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SimulationStatistics } from '../../models/simulation.models';
+import { SimulationStatistics } from '../../services/simulation.service';
+// import { SimulationStatistics } from '../../models/simulation.models';
 
 @Component({
   selector: 'app-statistics-panel',

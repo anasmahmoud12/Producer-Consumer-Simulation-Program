@@ -1,9 +1,6 @@
 package com.Producer.Consumer.Simulation.Program.Backend.Service;
 
-import com.Producer.Consumer.Simulation.Program.Backend.Models.Connection;
-import com.Producer.Consumer.Simulation.Program.Backend.Models.Machine;
-import com.Producer.Consumer.Simulation.Program.Backend.Models.Product;
-import com.Producer.Consumer.Simulation.Program.Backend.Models.ProductionQueue;
+import com.Producer.Consumer.Simulation.Program.Backend.Models.*;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Concurrency.MachineExecutor;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEvent;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEventPublisher;
@@ -19,8 +16,17 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
 @Service
 public class SimulationService {
+    // Nodes
+    private StartNode startNode;
+    private EndNode endNode;
     private final List<Machine> machines = Collections.synchronizedList(new ArrayList<>());
     private final List<ProductionQueue> queues = Collections.synchronizedList(new ArrayList<>());
     private final List<Product> products = Collections.synchronizedList(new ArrayList<>());
@@ -28,145 +34,151 @@ public class SimulationService {
 
     private final SimulationStatistics statistics = new SimulationStatistics();
     private final SimulationWebSocketHandler webSocketHandler;
-    private final MachineExecutor machineExecutor;
-    private final SimulationEventPublisher eventPublisher;
 
-    // NEW: Production thread management
-    private ScheduledExecutorService productionExecutor;
-    private ScheduledFuture<?> productionTask;
     private boolean isRunning = false;
+    private boolean isPaused = false; // ✅ ADDED: Track pause state
+    private ScheduledExecutorService productGenerator;
     private AtomicInteger productCounter = new AtomicInteger(0);
 
-    private final SnapshotManager snapshotManager = new SnapshotManager();
-    private ScheduledExecutorService snapshotExecutor;
-    private ScheduledFuture<?> snapshotTask;
-    public SimulationService(SimulationWebSocketHandler webSocketHandler,
-                             MachineExecutor machineExecutor,
-                             SimulationEventPublisher eventPublisher) {
+    private final String[] COLORS = {"#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899"};
+    private final String[] TYPES = {"TypeA", "TypeB", "TypeC"};
+
+    public SimulationService(SimulationWebSocketHandler webSocketHandler) {
         this.webSocketHandler = webSocketHandler;
-        this.machineExecutor = machineExecutor;
-        this.eventPublisher = eventPublisher;
         initializeDefaultSetup();
     }
 
     private void initializeDefaultSetup() {
+        // ✅ Initialize START and END nodes
+        startNode = new StartNode(50, 300, 100); // Generate 100 products
+        endNode = new EndNode(1150, 300);
+
         // Create default queues
-        queues.add(new ProductionQueue("Q0", 100, 200, 100));
-        queues.add(new ProductionQueue("Q1", 500, 200, 100));
-        queues.add(new ProductionQueue("Q2", 900, 200, 100));
+        queues.add(new ProductionQueue("Q0", 200, 300, 100));
+        queues.add(new ProductionQueue("Q1", 600, 300, 100));
+        queues.add(new ProductionQueue("Q2", 1000, 300, 100));
 
         // Create default machines
-        machines.add(new Machine("M1", 300, 200, 1000, 2000));
-        machines.add(new Machine("M2", 700, 200, 1500, 2500));
+        machines.add(new Machine("M1", 400, 300, 2000, 4000));
+        machines.add(new Machine("M2", 800, 300, 2000, 4000));
 
         // Create default connections
-        connections.add(new Connection("Q0", "M1"));
-        connections.add(new Connection("M1", "Q1"));
-        connections.add(new Connection("Q1", "M2"));
-        connections.add(new Connection("M2", "Q2"));
+        addConnectionInternal("START", "Q0", "start", "queue");
+        addConnectionInternal("Q0", "M1", "queue", "machine");
+        addConnectionInternal("M1", "Q1", "machine", "queue");
+        addConnectionInternal("Q1", "M2", "queue", "machine");
+        addConnectionInternal("M2", "Q2", "machine", "queue");
+        addConnectionInternal("Q2", "END", "queue", "end");
 
-        System.out.println("✅ Default simulation setup initialized");
+        System.out.println("✅ Default simulation setup with START and END nodes");
     }
 
-    // ============ FIXED START SIMULATION ============
+    // ============================================================================
+    // START/END NODE METHODS
+    // ============================================================================
+
+    public void setTotalProducts(int total) {
+        startNode.setTotalProductsToGenerate(total);
+        System.out.println("📊 Total products set to: " + total);
+    }
+
+    public int getTotalProducts() {
+        return startNode.getTotalProductsToGenerate();
+    }
+
+    public int getGeneratedCount() {
+        return startNode.getGeneratedCount();
+    }
+
+    public int getCompletedCount() {
+        return endNode.getCompletedCount();
+    }
+
+    // ============================================================================
+    // SIMULATION CONTROL
+    // ============================================================================
+
     public void startSimulation(int productionRate) {
-        if (isRunning) {
-            System.out.println("⚠️ Simulation already running");
-            return;
-        }
-
         isRunning = true;
+        isPaused = false; // ✅ Reset pause state when starting
         statistics.setSimulationStartTime(System.currentTimeMillis());
-        System.out.println("🚀 Simulation started with production rate: " + productionRate + "ms");
+        startProductGeneration(productionRate);
 
-        // Start producer thread to create products
-        productionExecutor = Executors.newScheduledThreadPool(1);
-        productionTask = productionExecutor.scheduleAtFixedRate(
-                this::produceProduct,
-                0,
-                productionRate,
-                TimeUnit.MILLISECONDS
-        );
-
-        // Start all machines
-        startAllMachines();
-        startAutoSnapshots();
-
-        // Broadcast state update
+        System.out.println("🚀 Simulation started");
+        System.out.println("📦 Will generate " + startNode.getTotalProductsToGenerate() + " products");
         webSocketHandler.broadcast("/topic/state-update", getCurrentState());
     }
 
-    // ============ NEW: PRODUCT PRODUCER ============
-    private void produceProduct() {
-        if (!isRunning) return;
+    // ✅ ADDED: Pause simulation method
+    public void pauseSimulation() {
+        isPaused = true;
+        System.out.println("⏸️ Simulation paused");
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
+    }
 
+    // ✅ ADDED: Resume simulation method
+    public void resumeSimulation() {
+        isPaused = false;
+        System.out.println("▶️ Simulation resumed");
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
+    }
+
+    private void startProductGeneration(int productionRate) {
+        if (productGenerator != null) {
+            productGenerator.shutdownNow();
+        }
+
+        productGenerator = Executors.newScheduledThreadPool(1);
+
+        productGenerator.scheduleAtFixedRate(() -> {
+            // ✅ Check both running and paused states
+            if (isRunning && !isPaused && startNode.canGenerate()) {
+                generateProduct();
+            } else if (!startNode.canGenerate()) {
+                System.out.println("✅ Reached product limit: " + startNode.getTotalProductsToGenerate());
+            }
+        }, 0, productionRate, TimeUnit.MILLISECONDS);
+    }
+
+    private void generateProduct() {
         try {
-            // Find the starting queue (one with no incoming connections)
-            ProductionQueue startQueue = findStartQueue();
+            String id = "P" + productCounter.incrementAndGet();
+            String color = COLORS[ThreadLocalRandom.current().nextInt(COLORS.length)];
+            int priority = ThreadLocalRandom.current().nextInt(1, 4);
+            String type = TYPES[ThreadLocalRandom.current().nextInt(TYPES.length)];
 
-            if (startQueue != null) {
-                String[] colors = {"#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"};
-                String color = colors[ThreadLocalRandom.current().nextInt(colors.length)];
-                int priority = ThreadLocalRandom.current().nextInt(1, 6);
+            // ✅ FIXED: Using correct constructor signature (id, color, priority, type)
+            Product product = new Product(id, color, priority, type);
+            products.add(product);
+            startNode.incrementGenerated();
 
-                Product product = new Product(color, priority, "TypeA");
-
-                if (startQueue.addProduct(product)) {
-                    products.add(product);
-                    statistics.setTotalProductsInSystem(products.size());
-
-                    System.out.println("📦 Product created: " + product.getId() +
-                            " (Priority: " + priority + ") added to " + startQueue.getId());
-
-                    eventPublisher.notifyObservers(
-                            new SimulationEvent("PRODUCT_CREATED", product)
-                    );
-
-                    webSocketHandler.broadcast("/topic/state-update", getCurrentState());
-                } else {
-                    System.out.println("⚠️ Queue " + startQueue.getId() + " is full!");
+            // Add to first queue after START
+            ProductionQueue firstQueue = findQueueConnectedToStart();
+            if (firstQueue != null) {
+                synchronized (firstQueue.getProducts()) {
+                    firstQueue.getProducts().add(product);
                 }
-            } else {
-                System.out.println("⚠️ No starting queue found!");
+
+                statistics.setTotalProductsInSystem(statistics.getTotalProductsInSystem() + 1);
+
+                Map<String, Object> event = new HashMap<>();
+                event.put("type", "PRODUCT_GENERATED");
+                event.put("product", product);
+                event.put("queueId", firstQueue.getId());
+
+                webSocketHandler.broadcast("/topic/simulation-events", event);
+
+                System.out.println("📦 Generated: " + id + " (" + startNode.getGeneratedCount() +
+                        "/" + startNode.getTotalProductsToGenerate() + ")");
             }
         } catch (Exception e) {
-            System.err.println("❌ Error producing product: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Error generating product: " + e.getMessage());
         }
     }
 
-    // ============ NEW: START ALL MACHINES ============
-    private void startAllMachines() {
-        for (Machine machine : machines) {
-            ProductionQueue inputQueue = findInputQueue(machine.getId());
-            ProductionQueue outputQueue = findOutputQueue(machine.getId());
-
-            if (inputQueue != null) {
-                System.out.println("🔧 Starting machine: " + machine.getId() +
-                        " (Input: " + inputQueue.getId() +
-                        ", Output: " + (outputQueue != null ? outputQueue.getId() : "none") + ")");
-                machineExecutor.startMachine(machine, inputQueue, outputQueue);
-            } else {
-                System.out.println("⚠️ Machine " + machine.getId() + " has no input queue!");
-            }
-        }
-    }
-
-    // ============ NEW: HELPER METHODS ============
-    private ProductionQueue findInputQueue(String machineId) {
+    private ProductionQueue findQueueConnectedToStart() {
         return connections.stream()
-                .filter(c -> c.getTo().equals(machineId))
-                .findFirst()
-                .map(c -> queues.stream()
-                        .filter(q -> q.getId().equals(c.getFrom()))
-                        .findFirst()
-                        .orElse(null))
-                .orElse(null);
-    }
-
-    private ProductionQueue findOutputQueue(String machineId) {
-        return connections.stream()
-                .filter(c -> c.getFrom().equals(machineId))
+                .filter(c -> "START".equals(c.getFrom()))
                 .findFirst()
                 .map(c -> queues.stream()
                         .filter(q -> q.getId().equals(c.getTo()))
@@ -175,90 +187,180 @@ public class SimulationService {
                 .orElse(null);
     }
 
-    private ProductionQueue findStartQueue() {
-        // Find queue with no incoming connections (starting point)
-        Set<String> destinationIds = connections.stream()
-                .map(Connection::getTo)
-                .collect(Collectors.toSet());
-
-        return queues.stream()
-                .filter(q -> !destinationIds.contains(q.getId()))
-                .findFirst()
-                .orElse(queues.isEmpty() ? null : queues.get(0));
-    }
-
-    // ============ FIXED STOP SIMULATION ============
     public void stopSimulation() {
         isRunning = false;
-        System.out.println("⏹️ Simulation stopped");
-
-        // Stop production
-        if (productionTask != null) {
-            productionTask.cancel(true);
+        isPaused = false; // ✅ Reset pause state when stopping
+        if (productGenerator != null) {
+            productGenerator.shutdownNow();
+            productGenerator = null;
         }
-        if (productionExecutor != null) {
-            productionExecutor.shutdown();
-            try {
-                if (!productionExecutor.awaitTermination(2, TimeUnit.SECONDS)) {
-                    productionExecutor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                productionExecutor.shutdownNow();
-                Thread.currentThread().interrupt();
+
+        System.out.println("⏹️ Simulation stopped");
+        System.out.println("📊 Generated: " + startNode.getGeneratedCount());
+        System.out.println("✅ Completed: " + endNode.getCompletedCount());
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
+    }
+
+    // ============================================================================
+    // CONNECTION MANAGEMENT WITH VALIDATION
+    // ============================================================================
+
+    public boolean addConnection(String from, String to) {
+        String fromType = getNodeType(from);
+        String toType = getNodeType(to);
+
+        return addConnectionInternal(from, to, fromType, toType);
+    }
+
+    private boolean addConnectionInternal(String from, String to, String fromType, String toType) {
+        Connection newConnection = new Connection(from, to, fromType, toType);
+
+        // Validate connection
+        if (!newConnection.isValid()) {
+            System.err.println("❌ Invalid connection: " + from + " -> " + to);
+            return false;
+        }
+
+        // Check specific rules
+        if ("machine".equals(fromType)) {
+            Machine machine = findMachine(from);
+            if (machine != null && !machine.canAddOutputQueue()) {
+                System.err.println("❌ Machine " + from + " already has output queue");
+                return false;
             }
         }
 
-        // Stop all machines
-        machineExecutor.stopAll();
-        stopAutoSnapshots();
-        createSnapshot();
-        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
-    }
-
-    public void pauseSimulation() {
-        System.out.println("⏸️ Simulation paused");
-        if (productionTask != null) {
-            productionTask.cancel(false);
+        if ("queue".equals(fromType)) {
+            ProductionQueue queue = findQueue(from);
+            if (queue != null) {
+                // Queue can have multiple outputs - OK
+            }
         }
-        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
-    }
 
-    public void resumeSimulation() {
-        System.out.println("▶️ Simulation resumed");
-        if (productionExecutor != null && !productionExecutor.isShutdown()) {
-            productionTask = productionExecutor.scheduleAtFixedRate(
-                    this::produceProduct,
-                    0,
-                    2000,
-                    TimeUnit.MILLISECONDS
-            );
+        if ("machine".equals(toType)) {
+            Machine machine = findMachine(to);
+            if (machine != null) {
+                // Machine can have multiple inputs - OK
+            }
         }
+
+        if ("queue".equals(toType)) {
+            ProductionQueue queue = findQueue(to);
+            if (queue != null && !queue.canAddInputMachine()) {
+                System.err.println("❌ Queue " + to + " already has input machine");
+                return false;
+            }
+        }
+
+        // Add connection
+        connections.add(newConnection);
+
+        // Update node references
+        updateNodeReferences(from, to, fromType, toType);
+
+        System.out.println("🔗 Connection added: " + from + " -> " + to);
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
+        return true;
+    }
+
+    private void updateNodeReferences(String from, String to, String fromType, String toType) {
+        if ("machine".equals(fromType) && "queue".equals(toType)) {
+            Machine machine = findMachine(from);
+            ProductionQueue queue = findQueue(to);
+            if (machine != null && queue != null) {
+                machine.setOutputQueueId(to);
+                queue.setInputMachineId(from);
+            }
+        } else if ("queue".equals(fromType) && "machine".equals(toType)) {
+            ProductionQueue queue = findQueue(from);
+            Machine machine = findMachine(to);
+            if (queue != null && machine != null) {
+                queue.addOutputMachine(to);
+                machine.addInputQueue(from);
+            }
+        }
+    }
+
+    public void removeConnection(String from, String to) {
+        connections.removeIf(c -> c.getFrom().equals(from) && c.getTo().equals(to));
+
+        // Update node references
+        Machine machine = findMachine(from);
+        if (machine != null) {
+            machine.setOutputQueueId(null);
+        }
+
+        ProductionQueue queue = findQueue(from);
+        if (queue != null) {
+            queue.removeOutputMachine(to);
+        }
+
+        machine = findMachine(to);
+        if (machine != null) {
+            machine.removeInputQueue(from);
+        }
+
+        queue = findQueue(to);
+        if (queue != null) {
+            queue.setInputMachineId(null);
+        }
+
+        System.out.println("✂️ Connection removed: " + from + " -> " + to);
         webSocketHandler.broadcast("/topic/state-update", getCurrentState());
     }
 
-    // ============ ADD/REMOVE METHODS ============
+    // ✅ ADDED: Public getNodeType method (required by Controller)
+    public String getNodeType(String id) {
+        if ("START".equals(id)) return "start";
+        if ("END".equals(id)) return "end";
+        if (findMachine(id) != null) return "machine";
+        if (findQueue(id) != null) return "queue";
+        return "unknown";
+    }
+
+    // ============================================================================
+    // POSITION UPDATE (FOR DRAG & DROP)
+    // ============================================================================
+
+    public void updatePosition(String id, double x, double y) {
+        if ("START".equals(id)) {
+            startNode.setX(x);
+            startNode.setY(y);
+        } else if ("END".equals(id)) {
+            endNode.setX(x);
+            endNode.setY(y);
+        } else {
+            Machine machine = findMachine(id);
+            if (machine != null) {
+                machine.setX(x);
+                machine.setY(y);
+            } else {
+                ProductionQueue queue = findQueue(id);
+                if (queue != null) {
+                    queue.setX(x);
+                    queue.setY(y);
+                }
+            }
+        }
+
+        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
+    }
+
+    // ============================================================================
+    // CRUD OPERATIONS
+    // ============================================================================
+
     public Machine addMachine(double x, double y, int minServiceTime, int maxServiceTime) {
         String id = "M" + (machines.size() + 1);
         Machine machine = new Machine(id, x, y, minServiceTime, maxServiceTime);
         machines.add(machine);
 
         System.out.println("➕ Added machine: " + id);
-
-        // If simulation is running, start this machine too
-        if (isRunning) {
-            ProductionQueue inputQueue = findInputQueue(machine.getId());
-            ProductionQueue outputQueue = findOutputQueue(machine.getId());
-            if (inputQueue != null) {
-                machineExecutor.startMachine(machine, inputQueue, outputQueue);
-            }
-        }
-
         webSocketHandler.broadcast("/topic/state-update", getCurrentState());
         return machine;
     }
 
     public void removeMachine(String id) {
-        machineExecutor.stopMachine(id);
         machines.removeIf(m -> m.getId().equals(id));
         connections.removeIf(c -> c.getFrom().equals(id) || c.getTo().equals(id));
 
@@ -284,164 +386,61 @@ public class SimulationService {
         webSocketHandler.broadcast("/topic/state-update", getCurrentState());
     }
 
-    public void addConnection(String from, String to) {
-        connections.add(new Connection(from, to));
+    // ============================================================================
+    // STATE & EXPORT
+    // ============================================================================
 
-        System.out.println("🔗 Added connection: " + from + " -> " + to);
-        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
-    }
-
-    public void removeConnection(String from, String to) {
-        connections.removeIf(c -> c.getFrom().equals(from) && c.getTo().equals(to));
-
-        System.out.println("✂️ Removed connection: " + from + " -> " + to);
-        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
-    }
-
-    // ============ STATE & CONFIG ============
     public Map<String, Object> getCurrentState() {
         Map<String, Object> state = new HashMap<>();
+        state.put("startNode", startNode);
+        state.put("endNode", endNode);
         state.put("machines", new ArrayList<>(machines));
         state.put("queues", new ArrayList<>(queues));
         state.put("products", new ArrayList<>(products));
         state.put("connections", new ArrayList<>(connections));
         state.put("statistics", statistics);
         state.put("isRunning", isRunning);
+        state.put("isPaused", isPaused); // ✅ Include pause state
         return state;
     }
 
     public Map<String, Object> exportConfiguration() {
         Map<String, Object> config = new HashMap<>();
-        config.put("productionRate", 2000);
-        config.put("simulationSpeed", 1.0);
+        config.put("totalProducts", startNode.getTotalProductsToGenerate());
+        config.put("startNode", startNode);
+        config.put("endNode", endNode);
         config.put("machines", new ArrayList<>(machines));
         config.put("queues", new ArrayList<>(queues));
         config.put("connections", new ArrayList<>(connections));
         return config;
     }
 
-    private void startAutoSnapshots() {
-        // Save a snapshot every 5 seconds during simulation
-        snapshotExecutor = Executors.newScheduledThreadPool(1);
-        snapshotTask = snapshotExecutor.scheduleAtFixedRate(
-                this::createSnapshot,
-                5, 5,
-                TimeUnit.SECONDS
-        );
-        System.out.println("📸 Auto-snapshots started (every 5 seconds)");
+    // ============================================================================
+    // HELPER METHODS
+    // ============================================================================
+
+    private Machine findMachine(String id) {
+        return machines.stream()
+                .filter(m -> m.getId().equals(id))
+                .findFirst()
+                .orElse(null);
     }
 
-    private void stopAutoSnapshots() {
-        if (snapshotTask != null) {
-            snapshotTask.cancel(false);
-        }
-        if (snapshotExecutor != null) {
-            snapshotExecutor.shutdown();
-            try {
-                if (!snapshotExecutor.awaitTermination(2, TimeUnit.SECONDS)) {
-                    snapshotExecutor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                snapshotExecutor.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-        }
-        System.out.println("📸 Auto-snapshots stopped");
+    private ProductionQueue findQueue(String id) {
+        return queues.stream()
+                .filter(q -> q.getId().equals(id))
+                .findFirst()
+                .orElse(null);
     }
-
-    public void createSnapshot() {
-        try {
-            SimulationSnapshot snapshot = new SimulationSnapshot(
-                    new ArrayList<>(machines),
-                    new ArrayList<>(queues),
-                    new ArrayList<>(products),
-                    new ArrayList<>(connections),
-                    statistics
-            );
-            snapshotManager.saveSnapshot(snapshot);
-            System.out.println("📸 Snapshot created at " + new Date(snapshot.getTimestamp()));
-        } catch (Exception e) {
-            System.err.println("❌ Failed to create snapshot: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    public List<SimulationSnapshot> getAllSnapshots() {
-        return snapshotManager.getAllSnapshots();
-    }
-
-    public void restoreSnapshot(int index) {
-        SimulationSnapshot snapshot = snapshotManager.getSnapshot(index);
-        System.out.println(snapshot.getProducts().size());
-        if (snapshot == null) {
-            System.out.println(",,");
-            throw new IllegalArgumentException("Snapshot not found at index: " + index);
-        }
-
-        System.out.println("📼 Restoring snapshot from " + new Date(snapshot.getTimestamp()));
-
-        // Stop simulation if running
-        boolean wasRunning = isRunning;
-        if (isRunning) {
-            stopSimulation();
-            // Wait a bit for threads to stop
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        // Clear current state
-        machines.clear();
-        queues.clear();
-        products.clear();
-        connections.clear();
-
-        // Restore from snapshot
-        machines.addAll(snapshot.getMachines());
-        queues.addAll(snapshot.getQueues());
-        products.addAll(snapshot.getProducts());
-        connections.addAll(snapshot.getConnections());
-
-        // Restore statistics
-        if (snapshot.getStatistics() != null) {
-            statistics.setTotalProductsProcessed(snapshot.getStatistics().getTotalProductsProcessed());
-            statistics.setAverageWaitTime(snapshot.getStatistics().getAverageWaitTime());
-            statistics.setAverageProcessingTime(snapshot.getStatistics().getAverageProcessingTime());
-            statistics.setMachineUtilization(new HashMap<>(snapshot.getStatistics().getMachineUtilization()));
-            statistics.setMachineProcessedCount(new HashMap<>(snapshot.getStatistics().getMachineProcessedCount()));
-            statistics.setThroughput(snapshot.getStatistics().getThroughput());
-            statistics.setTotalProductsInSystem(snapshot.getStatistics().getTotalProductsInSystem());
-            statistics.setSimulationStartTime(snapshot.getStatistics().getSimulationStartTime());
-        }
-
-        System.out.println("✅ Snapshot restored successfully");
-
-        // Broadcast updated state to frontend
-        webSocketHandler.broadcast("/topic/state-update", getCurrentState());
-        webSocketHandler.broadcast("/topic/statistics", statistics);
-    }
-
-    public void deleteSnapshot(int index) {
-        // Since SnapshotManager doesn't have delete by index, we'll skip for now
-        // or implement if needed
-        System.out.println("🗑️ Snapshot delete requested at index: " + index);
-    }
-
-    public void clearSnapshots() {
-        snapshotManager.clear();
-        System.out.println("🗑️ All snapshots cleared");
-    }
-
-
-
 
     // Getters
+    public StartNode getStartNode() { return startNode; }
+    public EndNode getEndNode() { return endNode; }
     public List<Machine> getMachines() { return new ArrayList<>(machines); }
     public List<ProductionQueue> getQueues() { return new ArrayList<>(queues); }
     public List<Product> getProducts() { return new ArrayList<>(products); }
     public List<Connection> getConnections() { return new ArrayList<>(connections); }
     public SimulationStatistics getStatistics() { return statistics; }
     public boolean isRunning() { return isRunning; }
+    public boolean isPaused() { return isPaused; } // ✅ Getter for pause state
 }
