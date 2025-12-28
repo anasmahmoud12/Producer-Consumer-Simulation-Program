@@ -96,3 +96,123 @@
 2025-12-29T00:34:16.406+02:00  WARN 94352 --- [production-line-simulator] [SpringApplicationShutdownHook] o.s.b.f.support.DisposableBeanAdapter    : Invocation of destroy method failed on bean with name 'inMemoryDatabaseShutdownExecutor': org.h2.jdbc.JdbcSQLNonTransientConnectionException: Database is already closed (to disable automatic closing at VM shutdown, add ";DB_CLOSE_ON_EXIT=FALSE" to the db URL) [90121-240]
 2025-12-29T00:34:16.407+02:00  INFO 94352 --- [production-line-simulator] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
 2025-12-29T00:34:16.409+02:00  INFO 94352 --- [production-line-simulator] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2025-12-29T00:47:19.017+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] c.P.C.S.P.Backend.BackendApplication     : Starting BackendApplication using Java 21.0.8 with PID 18041 (/home/el-3anteel/Repos/Producer-Consumer-Simulation-Program/Backend/target/classes started by el-3anteel in /home/el-3anteel/Repos/Producer-Consumer-Simulation-Program/Backend)
+2025-12-29T00:47:19.033+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] c.P.C.S.P.Backend.BackendApplication     : No active profile set, falling back to 1 default profile: "default"
+2025-12-29T00:47:19.566+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-12-29T00:47:19.566+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-12-29T00:47:24.748+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-12-29T00:47:24.892+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 49 ms. Found 0 JPA repository interfaces.
+2025-12-29T00:47:28.178+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2025-12-29T00:47:28.302+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-12-29T00:47:28.303+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.15]
+2025-12-29T00:47:28.360+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 8793 ms
+2025-12-29T00:47:28.800+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-12-29T00:47:29.258+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:b561fc07-08e3-476f-b214-130bd5a732da user=SA
+2025-12-29T00:47:29.260+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-12-29T00:47:29.406+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2025-12-29T00:47:29.665+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.0.Final
+2025-12-29T00:47:30.731+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-12-29T00:47:31.050+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:h2:mem:b561fc07-08e3-476f-b214-130bd5a732da]
+	Database driver: H2 JDBC Driver
+	Database dialect: H2Dialect
+	Database version: 2.4.240
+	Default catalog/schema: B561FC07-08E3-476F-B214-130BD5A732DA/PUBLIC
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 100
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-12-29T00:47:32.653+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-12-29T00:47:32.682+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-12-29T00:47:33.678+02:00  WARN 18041 --- [production-line-simulator] [restartedMain] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-12-29T00:47:34.636+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] o.s.b.h.a.H2ConsoleAutoConfiguration     : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:b561fc07-08e3-476f-b214-130bd5a732da'
+2025-12-29T00:47:34.827+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2025-12-29T00:47:34.844+02:00  INFO 18041 --- [production-line-simulator] [restartedMain] c.P.C.S.P.Backend.BackendApplication     : Started BackendApplication in 18.138 seconds (process running for 28.219)
+2025-12-29T00:47:48.988+02:00  INFO 18041 --- [production-line-simulator] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-12-29T00:47:48.988+02:00  INFO 18041 --- [production-line-simulator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-12-29T00:47:48.991+02:00  INFO 18041 --- [production-line-simulator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 3 ms
+2025-12-29T00:53:36.558+02:00  INFO 18041 --- [production-line-simulator] [SpringApplicationShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2025-12-29T00:53:36.571+02:00  INFO 18041 --- [production-line-simulator] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2025-12-29T00:53:36.596+02:00  INFO 18041 --- [production-line-simulator] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-12-29T00:53:36.651+02:00  WARN 18041 --- [production-line-simulator] [SpringApplicationShutdownHook] o.s.b.f.support.DisposableBeanAdapter    : Invocation of destroy method failed on bean with name 'inMemoryDatabaseShutdownExecutor': org.h2.jdbc.JdbcSQLNonTransientConnectionException: Database is already closed (to disable automatic closing at VM shutdown, add ";DB_CLOSE_ON_EXIT=FALSE" to the db URL) [90121-240]
+2025-12-29T00:53:36.653+02:00  INFO 18041 --- [production-line-simulator] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-12-29T00:53:36.656+02:00  INFO 18041 --- [production-line-simulator] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2025-12-29T00:53:47.016+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] c.P.C.S.P.Backend.BackendApplication     : Starting BackendApplication using Java 21.0.8 with PID 18425 (/home/el-3anteel/Repos/Producer-Consumer-Simulation-Program/Backend/target/classes started by el-3anteel in /home/el-3anteel/Repos/Producer-Consumer-Simulation-Program/Backend)
+2025-12-29T00:53:47.029+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] c.P.C.S.P.Backend.BackendApplication     : No active profile set, falling back to 1 default profile: "default"
+2025-12-29T00:53:47.227+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-12-29T00:53:47.227+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-12-29T00:53:57.067+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-12-29T00:53:57.166+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 55 ms. Found 0 JPA repository interfaces.
+2025-12-29T00:53:59.155+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2025-12-29T00:53:59.247+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-12-29T00:53:59.247+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.15]
+2025-12-29T00:53:59.312+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 12084 ms
+2025-12-29T00:54:00.172+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-12-29T00:54:00.662+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:31dc545a-f568-4cfe-b451-6db24c64e508 user=SA
+2025-12-29T00:54:00.663+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-12-29T00:54:00.839+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2025-12-29T00:54:01.223+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.0.Final
+2025-12-29T00:54:02.685+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-12-29T00:54:03.482+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:h2:mem:31dc545a-f568-4cfe-b451-6db24c64e508]
+	Database driver: H2 JDBC Driver
+	Database dialect: H2Dialect
+	Database version: 2.4.240
+	Default catalog/schema: 31DC545A-F568-4CFE-B451-6DB24C64E508/PUBLIC
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 100
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-12-29T00:54:04.890+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-12-29T00:54:04.933+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-12-29T00:54:05.884+02:00  WARN 18425 --- [production-line-simulator] [restartedMain] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-12-29T00:54:06.760+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] o.s.b.h.a.H2ConsoleAutoConfiguration     : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:31dc545a-f568-4cfe-b451-6db24c64e508'
+2025-12-29T00:54:07.141+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2025-12-29T00:54:07.148+02:00  INFO 18425 --- [production-line-simulator] [restartedMain] c.P.C.S.P.Backend.BackendApplication     : Started BackendApplication in 22.05 seconds (process running for 25.419)
+2025-12-29T00:55:02.193+02:00  INFO 18425 --- [production-line-simulator] [SpringApplicationShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2025-12-29T00:55:02.208+02:00  INFO 18425 --- [production-line-simulator] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2025-12-29T00:55:02.221+02:00  INFO 18425 --- [production-line-simulator] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-12-29T00:55:02.236+02:00  WARN 18425 --- [production-line-simulator] [SpringApplicationShutdownHook] o.s.b.f.support.DisposableBeanAdapter    : Invocation of destroy method failed on bean with name 'inMemoryDatabaseShutdownExecutor': org.h2.jdbc.JdbcSQLNonTransientConnectionException: Database is already closed (to disable automatic closing at VM shutdown, add ";DB_CLOSE_ON_EXIT=FALSE" to the db URL) [90121-240]
+2025-12-29T00:55:02.237+02:00  INFO 18425 --- [production-line-simulator] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-12-29T00:55:02.239+02:00  INFO 18425 --- [production-line-simulator] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2025-12-29T00:55:08.988+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] c.P.C.S.P.Backend.BackendApplication     : Starting BackendApplication using Java 21.0.8 with PID 18585 (/home/el-3anteel/Repos/Producer-Consumer-Simulation-Program/Backend/target/classes started by el-3anteel in /home/el-3anteel/Repos/Producer-Consumer-Simulation-Program/Backend)
+2025-12-29T00:55:08.991+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] c.P.C.S.P.Backend.BackendApplication     : No active profile set, falling back to 1 default profile: "default"
+2025-12-29T00:55:09.224+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-12-29T00:55:09.225+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-12-29T00:55:11.716+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-12-29T00:55:11.778+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 13 ms. Found 0 JPA repository interfaces.
+2025-12-29T00:55:13.235+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2025-12-29T00:55:13.280+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-12-29T00:55:13.280+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.15]
+2025-12-29T00:55:13.339+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 4113 ms
+2025-12-29T00:55:13.626+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-12-29T00:55:13.933+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:00cb3959-1d70-4d0b-b364-7ae7bd21f198 user=SA
+2025-12-29T00:55:13.945+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-12-29T00:55:14.041+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2025-12-29T00:55:14.273+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.0.Final
+2025-12-29T00:55:15.472+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-12-29T00:55:15.801+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:h2:mem:00cb3959-1d70-4d0b-b364-7ae7bd21f198]
+	Database driver: H2 JDBC Driver
+	Database dialect: H2Dialect
+	Database version: 2.4.240
+	Default catalog/schema: 00CB3959-1D70-4D0B-B364-7AE7BD21F198/PUBLIC
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 100
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-12-29T00:55:16.790+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-12-29T00:55:16.814+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-12-29T00:55:17.248+02:00  WARN 18585 --- [production-line-simulator] [restartedMain] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-12-29T00:55:17.743+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] o.s.b.h.a.H2ConsoleAutoConfiguration     : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:00cb3959-1d70-4d0b-b364-7ae7bd21f198'
+2025-12-29T00:55:17.838+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2025-12-29T00:55:17.844+02:00  INFO 18585 --- [production-line-simulator] [restartedMain] c.P.C.S.P.Backend.BackendApplication     : Started BackendApplication in 10.612 seconds (process running for 12.58)
+2025-12-29T00:55:27.310+02:00  INFO 18585 --- [production-line-simulator] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-12-29T00:55:27.311+02:00  INFO 18585 --- [production-line-simulator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-12-29T00:55:27.313+02:00  INFO 18585 --- [production-line-simulator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms

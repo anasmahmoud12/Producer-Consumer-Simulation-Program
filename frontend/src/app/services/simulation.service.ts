@@ -23,7 +23,7 @@ export interface StartNode extends SimulationNode {
 
 export interface EndNode extends SimulationNode {
   type: 'end';
-  completedProducts: Product[];
+  completedCount: 0;
 }
 
 export interface Product {

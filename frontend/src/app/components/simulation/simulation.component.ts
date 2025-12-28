@@ -8,7 +8,7 @@ import {
   SimulationStatistics, SimulationEvent, StartNode, EndNode, SimulationState
 } from '../../services/simulation.service';
 import { ReplayPanelComponent } from '../replay-panel.component';
-import { Subscription } from 'rxjs';
+import { delay, Subscription } from 'rxjs';
 import { StatisticsPanelComponent } from '../statistics-panel/statistics-panel.component';
 import { SettingsPanelComponent } from '../settings-panel/settings-panel.component';
 
@@ -103,7 +103,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
 
   private loadDemoState(): void {
     this.startNode = { id: 'START', x: 50, y: 300, type: 'start', totalProductsToGenerate: 100, generatedCount: 0 };
-    this.endNode = { id: 'END', x: 1150, y: 300, type: 'end', completedProducts: [] };
+    this.endNode = { id: 'END', x: 1150, y: 300, type: 'end', completedCount: 0 };
     this.queues = [
       { id: 'Q0', x: 200, y: 300, type: 'queue', capacity: 100, products: [], waitingMachines: [], inputMachineId: null, outputMachineIds: [] },
       { id: 'Q1', x: 600, y: 300, type: 'queue', capacity: 100, products: [], waitingMachines: [], inputMachineId: null, outputMachineIds: [] },
@@ -171,7 +171,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
         if (this.startNode) this.startNode.generatedCount++;
         break;
       case 'PRODUCT_COMPLETED':
-        if (this.endNode && event.data.product) this.endNode.completedProducts.push(event.data.product);
+        if (this.endNode && event.data.product) this.endNode.completedCount++;
         break;
     }
   }
@@ -181,6 +181,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
       this.renderCanvas();
       this.animationFrame = requestAnimationFrame(render);
     };
+    delay(200)
     render();
   }
 
@@ -239,7 +240,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
       ctx.fillStyle = 'white'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
       ctx.fillText('END', this.endNode.x, this.endNode.y - 5);
       ctx.font = '11px Arial';
-      ctx.fillText(`✓ ${this.endNode.completedProducts.length}`, this.endNode.x, this.endNode.y + 12);
+      ctx.fillText(`${this.endNode.completedCount}`, this.endNode.x, this.endNode.y + 12);
     }
 
     // Draw queues

@@ -34,7 +34,7 @@ public class Connection implements Serializable {
         }
 
         // QUEUE can only connect to MACHINE
-        if ("queue".equals(fromType) && !"machine".equals(toType)) {
+        if ("queue".equals(fromType) && !"machine".equals(toType) && !"end".equals(toType)) {
             return false;
         }
 
