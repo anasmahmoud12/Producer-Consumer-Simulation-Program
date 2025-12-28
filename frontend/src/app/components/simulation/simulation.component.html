@@ -35,15 +35,16 @@
       </button>
       
       <ng-container *ngIf="isRunning">
-        <button 
+        <!-- <button 
           class="btn btn-warning"
           (click)="pauseSimulation()">
           {{ isPaused ? '▶️ Resume' : '⏸️ Pause' }}
-        </button>
+        </button> -->
         <button 
           class="btn btn-danger"
           (click)="stopSimulation()">
-          ⏹️ Stop
+          <!-- dah kan el stop -->
+          ⏹️ Pause
         </button>
       </ng-container>
       
@@ -58,15 +59,15 @@
     <div class="configuration-actions">
       <button 
         class="btn btn-secondary"
-        (click)="addQueue()"
-        [disabled]="isRunning">
-        ➕ Add Queue
+        (click)="onAddQueue()"
+        [disabled]="isRunning || isAddingQueue">
+        {{ !isAddingQueue ? '➕ Add Queue': 'Select Position' }}
       </button>
       <button 
         class="btn btn-secondary"
-        (click)="addMachine()"
-        [disabled]="isRunning">
-        ➕ Add Machine
+        (click)="onAddMachine()"
+        [disabled]="isRunning || isAddingMachine">
+        {{ !isAddingMachine ? '➕ Add Machine': 'Select Position' }}
       </button>
       <button 
         class="btn btn-secondary"
@@ -88,7 +89,8 @@
     <canvas 
       #canvas 
       (click)="onCanvasClick($event)"
-      [ngClass]="{'connection-mode': connectionMode}">
+      [ngClass]="{'connection-mode': connectionMode}"
+      [style.cursor]="(isAddingMachine || isAddingQueue) ? 'crosshair' : 'default'">
     </canvas>
     
     <div 

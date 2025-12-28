@@ -22,7 +22,7 @@ import { SettingsPanelComponent } from '../settings-panel/settings-panel.compone
     CommonModule,
     FormsModule,
     StatisticsPanelComponent,  // ✅ Add this
-    SettingsPanelComponent  ,   // ✅ Add this
+    SettingsPanelComponent,   // ✅ Add this
     ReplayPanelComponent
   ],
   templateUrl: './simulation.component.html',
@@ -38,6 +38,8 @@ export class SimulationComponent implements OnInit, OnDestroy {
 
   isRunning = false;
   isPaused = false;
+  isAddingQueue = false;
+  isAddingMachine = false;
   showStats = false;
   showSettings = false;
   connectionMode = false;
@@ -90,7 +92,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
         this.queues = state.queues;
         console.log(state.queues)
         this.connections = state.connections;
-          console.log(state.connections)  ;
+        console.log(state.connections);
         this.statistics = state.statistics;
         this.isRunning = state.isRunning;
       },
@@ -152,7 +154,7 @@ export class SimulationComponent implements OnInit, OnDestroy {
   }
 
   private handleSimulationEvent(event: SimulationEvent): void {
-          console.log('Handling event type:', event.type);
+    console.log('Handling event type:', event.type);
 
     switch (event.type) {
       case 'MACHINE_PROCESSING':
@@ -313,17 +315,23 @@ export class SimulationComponent implements OnInit, OnDestroy {
   //   alert('Replay functionality requires backend implementation');
   // }
 
-replaySimulation(): void {
-  this.showReplay = true;
-}
+  replaySimulation(): void {
+    this.showReplay = true;
+  }
 
-toggleReplay(): void {
-  this.showReplay = !this.showReplay;
-}
-  addMachine(): void {
+  toggleReplay(): void {
+    this.showReplay = !this.showReplay;
+  }
+
+  addMachine(event: MouseEvent): void {
+
+    const xy = this.getXY(event);
+    const x = xy.x;
+    const y = xy.y;
+
     const machine = {
-      x: 300 + Math.random() * 400,
-      y: 150 + Math.random() * 300,
+      x: x,
+      y: y,
       minServiceTime: 1000,
       maxServiceTime: 3000,
       reliability: 0.95
@@ -333,12 +341,19 @@ toggleReplay(): void {
       next: (m) => this.machines.push(m),
       error: (error) => console.error('Error adding machine:', error)
     });
+
+    this.isAddingMachine = false;
   }
 
-  addQueue(): void {
+  addQueue(event: MouseEvent): void {
+
+    const xy = this.getXY(event);
+    const x = xy.x;
+    const y = xy.y;
+
     const queue = {
-      x: 200 + Math.random() * 600,
-      y: 150 + Math.random() * 300,
+      x: x,
+      y: y,
       capacity: 100
     };
 
@@ -346,9 +361,19 @@ toggleReplay(): void {
       next: (q) => this.queues.push(q),
       error: (error) => console.error('Error adding queue:', error)
     });
+
+    this.isAddingQueue = false;
   }
 
-  onCanvasClick(event: MouseEvent): void {
+  onAddQueue() {
+    this.isAddingQueue = true;
+  }
+
+  onAddMachine() {
+    this.isAddingMachine = true;
+  }
+
+  getXY(event: MouseEvent) {
     const canvas = this.canvas.nativeElement;
 
     const rect = canvas.getBoundingClientRect();
@@ -358,7 +383,23 @@ toggleReplay(): void {
     const x = (event.clientX - rect.left) * scaleX;
     const y = (event.clientY - rect.top) * scaleY;
 
+    return {'x': x, 'y': y}
+  }
 
+  onCanvasClick(event: MouseEvent): void {
+
+    if (this.isAddingMachine) {
+      this.addMachine(event);
+      return;
+    }
+    if (this.isAddingQueue) {
+      this.addQueue(event);
+      return;
+    }
+
+    const xy = this.getXY(event)
+    const x = xy.x
+    const y = xy.y
 
     if (this.connectionMode) {
       const clicked = this.findElementAt(x, y);
@@ -425,25 +466,25 @@ toggleReplay(): void {
   }
 
   onSnapshotRestored(): void {
-  console.log('📼 Snapshot restored, reloading state...');
-  
-  // Reload the state from backend
-  this.simulationService.getState().subscribe({
-    next: (state) => {
-      this.machines = state.machines;
-      this.queues = state.queues;
-      this.connections = state.connections;
-      this.statistics = state.statistics;
-      this.isRunning = state.isRunning;
-      
-      console.log('✅ State reloaded successfully');
-      console.log('Machines:', this.machines);
-      console.log('Queues:', this.queues);
-    },
-    error: (error) => {
-      console.error('❌ Error reloading state:', error);
-      alert('Snapshot restored but failed to reload display. Please refresh the page.');
-    }
-  });
-}
+    console.log('📼 Snapshot restored, reloading state...');
+
+    // Reload the state from backend
+    this.simulationService.getState().subscribe({
+      next: (state) => {
+        this.machines = state.machines;
+        this.queues = state.queues;
+        this.connections = state.connections;
+        this.statistics = state.statistics;
+        this.isRunning = state.isRunning;
+
+        console.log('✅ State reloaded successfully');
+        console.log('Machines:', this.machines);
+        console.log('Queues:', this.queues);
+      },
+      error: (error) => {
+        console.error('❌ Error reloading state:', error);
+        alert('Snapshot restored but failed to reload display. Please refresh the page.');
+      }
+    });
+  }
 }
