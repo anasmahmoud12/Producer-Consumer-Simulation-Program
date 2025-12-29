@@ -9,6 +9,7 @@ import com.Producer.Consumer.Simulation.Program.Backend.Models.ProductionQueue;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEvent;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEventPublisher;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationObserver;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
@@ -200,5 +201,7 @@ public class MachineExecutor implements SimulationObserver {
     @Override
     public void update(SimulationEvent event) {
         // Handle specific events if needed
+        System.out.println("👂 " + getClass().getSimpleName()
+                + " received event: " + event.getType());
     }
 }

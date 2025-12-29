@@ -26,6 +26,7 @@ public class SimulationSnapshot implements Serializable {
     private List<Connection> connections;
     private SimulationStatistics statistics;
 
+    // In SimulationSnapshot constructor:
     public SimulationSnapshot(
             List<Machine> machines,
             List<ProductionQueue> queues,
@@ -56,7 +57,7 @@ public class SimulationSnapshot implements Serializable {
             T copy = (T) ois.readObject();
             ois.close();
 
-            return copy;
+            return copy;  // Completely independent from original
         } catch (Exception e) {
             throw new RuntimeException("Deep copy failed for object: " +
                     (object != null ? object.getClass().getName() : "null"), e);

@@ -157,12 +157,15 @@ export class SimulationService {
   private handleMessage(message: any): void {
     switch (message.topic) {
       case '/topic/simulation-events':
+        console.log('Received simulation event:', message.data);
         this.simulationEvents$.next(message.data as SimulationEvent);
         break;
       case '/topic/state-update':
+        console.log('Received state update:', message.data);
         this.stateUpdate$.next(message.data);
         break;
       case '/topic/statistics':
+        console.log('Received statistics update:', message.data);
         this.statisticsUpdate$.next(message.data as SimulationStatistics);
         break;
     }

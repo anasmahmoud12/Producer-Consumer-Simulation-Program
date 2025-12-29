@@ -9,6 +9,7 @@ import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.Simulat
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Observer.SimulationEventPublisher;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Snapshot.SnapshotManager;
 import com.Producer.Consumer.Simulation.Program.Backend.Websocket.SimulationWebSocketHandler;
+import com.Producer.Consumer.Simulation.Program.Backend.Websocket.WebSocketBroadcaster;
 import org.springframework.stereotype.Service;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Snapshot.SimulationSnapshot;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Snapshot.SnapshotManager;
@@ -30,6 +31,7 @@ public class SimulationService {
     private final SimulationWebSocketHandler webSocketHandler;
     private final MachineExecutor machineExecutor;
     private final SimulationEventPublisher eventPublisher;
+    private final WebSocketBroadcaster webSocketBroadcaster;
 
     // NEW: Production thread management
     private ScheduledExecutorService productionExecutor;
@@ -42,10 +44,14 @@ public class SimulationService {
     private ScheduledFuture<?> snapshotTask;
     public SimulationService(SimulationWebSocketHandler webSocketHandler,
                              MachineExecutor machineExecutor,
-                             SimulationEventPublisher eventPublisher) {
+                             SimulationEventPublisher eventPublisher,
+                             WebSocketBroadcaster webSocketBroadcaster) {
         this.webSocketHandler = webSocketHandler;
         this.machineExecutor = machineExecutor;
         this.eventPublisher = eventPublisher;
+        this.webSocketBroadcaster = webSocketBroadcaster;
+        eventPublisher.subscribe(webSocketBroadcaster);
+        eventPublisher.subscribe(machineExecutor);
         initializeDefaultSetup();
     }
 
@@ -369,7 +375,7 @@ public class SimulationService {
     public List<SimulationSnapshot> getAllSnapshots() {
         return snapshotManager.getAllSnapshots();
     }
-
+    // Enables rollback to any previous state
     public void restoreSnapshot(int index) {
         SimulationSnapshot snapshot = snapshotManager.getSnapshot(index);
         System.out.println(snapshot.getProducts().size());

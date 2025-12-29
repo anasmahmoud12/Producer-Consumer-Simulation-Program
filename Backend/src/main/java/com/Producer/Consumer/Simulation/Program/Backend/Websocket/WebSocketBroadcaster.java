@@ -17,6 +17,8 @@ public class WebSocketBroadcaster implements SimulationObserver {
     @Override
     public void update(SimulationEvent event) {
         // ارسال الحدث لكل العملاء المتصلين
+        System.out.println("👂 " + getClass().getSimpleName()
+                + " received event: " + event.getType());
         webSocketHandler.broadcast("simulation-events", event);
     }
 

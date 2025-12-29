@@ -17,6 +17,8 @@ public class SimulationEventPublisher {
     }
 
     public synchronized void notifyObservers(SimulationEvent event) {
+        System.out.println("📢 Notifying observers count = " + observers.size());
+
         for (SimulationObserver observer : observers) {
             observer.update(event);
         }
