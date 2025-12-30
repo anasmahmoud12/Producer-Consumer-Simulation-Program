@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SettingsPanelComponent } from './settings-panel.component';
+import { QueueNodeComponent } from './queue-node.component';
 
-describe('SettingsPanelComponent', () => {
-  let component: SettingsPanelComponent;
-  let fixture: ComponentFixture<SettingsPanelComponent>;
+describe('QueueNodeComponent', () => {
+  let component: QueueNodeComponent;
+  let fixture: ComponentFixture<QueueNodeComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SettingsPanelComponent]
+      imports: [QueueNodeComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(SettingsPanelComponent);
+    fixture = TestBed.createComponent(QueueNodeComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

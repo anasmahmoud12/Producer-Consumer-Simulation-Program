@@ -1,63 +1,46 @@
-
 export interface Product {
   id: string;
   color: string;
-  priority: number;
   createdAt: number;
-  enteredQueueAt: number;
-  status: string;
-  productType: string;
 }
 
+// queue.model.ts
+export interface Queue {
+  id: string;
+  type: 'start' | 'normal' | 'end';
+  productCount: number;
+  x: number;
+  y: number;
+}
+
+// machine.model.ts
 export interface Machine {
   id: string;
-  x: number;
-  y: number;
-  minServiceTime: number;
-  maxServiceTime: number;
-  status: string;
+  serviceTime: number;
+  isProcessing: boolean;
+  isFlashing: boolean;
+  currentColor: string;
   currentProduct: Product | null;
-  color: string;
-  processedCount: number;
-  totalProcessingTime: number;
-  reliability: number;
-}
-
-export interface ProductionQueue {
-  id: string;
   x: number;
   y: number;
-  capacity: number;
-  products: Product[];
-  waitingMachines: string[];
+  inputQueueIds: string[];
+  outputQueueId: string | null;
 }
 
+// connection.model.ts
 export interface Connection {
-  from: string;
-  to: string;
+  id: string;
+  sourceId: string;
+  targetId: string;
+  sourceType: 'queue' | 'machine';
+  targetType: 'queue' | 'machine';
 }
 
-export interface SimulationStatistics {
-  totalProductsProcessed: number;
-  averageWaitTime: number;
-  averageProcessingTime: number;
-  machineUtilization: { [key: string]: number };
-  machineProcessedCount: { [key: string]: number };
-  throughput: number;
-  totalProductsInSystem: number;
-  simulationStartTime: number;
-}
-
+// simulation-state.model.ts
 export interface SimulationState {
+  queues: Queue[];
   machines: Machine[];
-  queues: ProductionQueue[];
-  products: Product[];
-  statistics: SimulationStatistics;
+  connections: Connection[];
   isRunning: boolean;
-}
-
-export interface SimulationEvent {
-  type: string;
-  data: any;
   timestamp: number;
 }
