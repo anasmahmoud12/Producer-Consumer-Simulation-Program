@@ -61,7 +61,7 @@ import { CommonModule } from '@angular/common';
           🔄 Replay
         </button>
         <button (click)="onReplayPanel()" class="btn btn-replay-panel" title="Open Replay Panel">
-  📺 Replay Panel
+  📺 Snapshots Panel
 </button>
         <span *ngIf="snapshotCount > 0" class="snapshot-badge">
           {{ snapshotCount }} screenshots
