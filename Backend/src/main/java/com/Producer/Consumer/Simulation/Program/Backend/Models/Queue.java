@@ -33,7 +33,7 @@ public class Queue extends Subject {
         }
     }
 
-    // ✅ ADDED: Deep copy method - CRITICAL FIX
+
     public Queue deepCopy() {
         return new Queue(this.id, this.type, this.products.size(), this.x, this.y);
     }

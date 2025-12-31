@@ -9,10 +9,10 @@ public class Connection {
 
     public Connection(String sourceId, String targetId, String sourceType, String targetType) {
         this.id = sourceId + "-" + targetId;
-        this.sourceId = sourceId;
-        this.targetId = targetId;
-        this.sourceType = sourceType;
-        this.targetType = targetType;
+        this.sourceId = sourceId; // Same source = preserves ID
+        this.targetId = targetId;  // Same target = preserves ID
+        this.sourceType = sourceType; // Same type
+        this.targetType = targetType; // Same type
     }
 
     // Getters

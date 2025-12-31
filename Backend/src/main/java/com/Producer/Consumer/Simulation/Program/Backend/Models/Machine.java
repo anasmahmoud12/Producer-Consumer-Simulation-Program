@@ -48,8 +48,9 @@ public class Machine implements Observer {
         }
     }
 
-    // ✅ ADDED: Deep copy method - CRITICAL FIX
+
     public Machine deepCopy() {
+        // Preserves: ID, service time, processing state, position, color
         return new Machine(
                 this.id,
                 this.serviceTime,

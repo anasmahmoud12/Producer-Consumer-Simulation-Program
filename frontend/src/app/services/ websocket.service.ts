@@ -45,4 +45,5 @@ export class WebSocketService {
   getSimulationState(): Observable<SimulationState | null> {
     return this.simulationState$;
   }
+  
 }

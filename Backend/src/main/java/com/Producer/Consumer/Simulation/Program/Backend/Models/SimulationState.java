@@ -17,25 +17,23 @@ public class SimulationState {
         this.timestamp = System.currentTimeMillis();
     }
 
-    // ✅ MODIFIED: Deep copy constructor - CRITICAL FIX
+
     public SimulationState(SimulationState other) {
         this.queues = new HashMap<>();
         this.machines = new HashMap<>();
         this.connections = new ArrayList<>();
 
-        // ✅ Deep copy queues - create NEW Queue objects
+        // Deep copy each component
         for (Map.Entry<String, Queue> entry : other.queues.entrySet()) {
             Queue copy = entry.getValue().deepCopy();
             this.queues.put(entry.getKey(), copy);
         }
 
-        // ✅ Deep copy machines - create NEW Machine objects
         for (Map.Entry<String, Machine> entry : other.machines.entrySet()) {
             Machine copy = entry.getValue().deepCopy();
             this.machines.put(entry.getKey(), copy);
         }
 
-        // ✅ Deep copy connections
         for (Connection conn : other.connections) {
             Connection copy = new Connection(
                     conn.getSourceId(),
@@ -48,9 +46,6 @@ public class SimulationState {
 
         this.isRunning = other.isRunning;
         this.timestamp = System.currentTimeMillis();
-
-        System.out.println("[SimulationState] ✅ Deep copy: " +
-                queues.size() + " queues, " + machines.size() + " machines");
     }
 
     // Getters and Setters

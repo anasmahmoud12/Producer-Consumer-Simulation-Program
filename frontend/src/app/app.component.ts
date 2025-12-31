@@ -7,14 +7,21 @@ import { ToolbarComponent } from './components/toolbar/toolbar.component';
 import { CanvasComponent } from './components/canvas/canvas.component';
 import { SimulationState, Queue, Machine, Connection } from './models/simulation.models';
 import { WebSocketService } from './services/ websocket.service';
+import { ReplayPanelComponent } from './components/replay-panel/replay-panel.component';
+
 // import { WebSocketService } from './services/websocket.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, ToolbarComponent, CanvasComponent],
+  imports: [CommonModule, HttpClientModule, ToolbarComponent, CanvasComponent, ReplayPanelComponent],
   template: `
     <div class="app-container">
+<app-replay-panel
+  *ngIf="showReplayPanel"
+  (close)="showReplayPanel = false">
+</app-replay-panel>
+
       <app-toolbar
         [isRunning]="state?.isRunning || false"
         [isPaused]="isPaused"
@@ -32,7 +39,8 @@ import { WebSocketService } from './services/ websocket.service';
         (pause)="pauseSimulation()"
         (resume)="resumeSimulation()"
         (reset)="resetSimulation()"
-        (replay)="replaySimulation()">
+        (replay)="replaySimulation()"
+        (replayPanel)="openReplayPanel()">>
       </app-toolbar>
 
       <app-canvas
@@ -497,7 +505,13 @@ export class AppComponent implements OnInit, OnDestroy {
   draggingNodeId: string | null = null;
   draggingNodeType: 'queue' | 'machine' | null = null;
   dragOffset = { x: 0, y: 0 };
-  
+  showReplayPanel = false;
+
+// Add this method:
+openReplayPanel(): void {
+  console.log('📺 Opening Replay Panel');
+  this.showReplayPanel = true;
+}
   private subscription?: Subscription;
   private replayInterval?: any;
   private snapshotCheckInterval?: any;
@@ -655,6 +669,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.playReplay();
     });
   }
+
 
   playReplay() {
     if (this.replayInterval) {
@@ -871,4 +886,5 @@ export class AppComponent implements OnInit, OnDestroy {
     this.draggingNodeId = null;
     this.draggingNodeType = null;
   }
+  
 }

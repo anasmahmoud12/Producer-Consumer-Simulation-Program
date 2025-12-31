@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -60,7 +60,9 @@ import { CommonModule } from '@angular/common';
                 [disabled]="isRunning || isReplaying || !hasSnapshots">
           🔄 Replay
         </button>
-        
+        <button (click)="onReplayPanel()" class="btn btn-replay-panel" title="Open Replay Panel">
+  📺 Replay Panel
+</button>
         <span *ngIf="snapshotCount > 0" class="snapshot-badge">
           {{ snapshotCount }} screenshots
         </span>
@@ -157,6 +159,10 @@ import { CommonModule } from '@angular/common';
       font-size: 0.8rem;
       font-weight: 600;
     }
+    .btn-replay-panel { 
+  background: #8b5cf6; 
+  color: white; 
+}
   `]
 })
 export class ToolbarComponent {
@@ -179,6 +185,7 @@ export class ToolbarComponent {
   @Output() resume = new EventEmitter<void>();
   @Output() reset = new EventEmitter<void>();
   @Output() replay = new EventEmitter<void>();
+  @Output() replayPanel = new EventEmitter<void>();
 
   onAddStartQueue() { this.addStartQueue.emit(); }
   onAddNormalQueue() { this.addNormalQueue.emit(); }
@@ -206,4 +213,8 @@ export class ToolbarComponent {
     console.log('🔄 Toolbar: Replay clicked');
     this.replay.emit(); 
   }
+  onReplayPanel() { 
+  console.log('📺 Toolbar: Replay Panel clicked');
+  this.replayPanel.emit(); 
+}
 }

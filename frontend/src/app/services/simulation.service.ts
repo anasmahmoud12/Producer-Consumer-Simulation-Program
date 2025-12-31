@@ -147,4 +147,24 @@ export class SimulationService {
   // getReplaySnapshots(): Observable<SimulationState[]> {
   //   return this.http.get<SimulationState[]>(`${this.apiUrl}/replay`);
   // }
+   getAllSnapshots(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/snapshots`);
+  }
+
+  /**
+   * Restore simulation to a specific snapshot
+   */
+  restoreSnapshot(index: number): Observable<SimulationState> {
+    return this.http.post<SimulationState>(
+      `${this.apiUrl}/snapshots/restore/${index}`,
+      null
+    );
+  }
+
+  /**
+   * Clear all snapshots
+   */
+  clearSnapshots(): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/snapshots/clear`);
+  }
 }

@@ -7,6 +7,7 @@ package com.Producer.Consumer.Simulation.Program.Backend.Service;
 import com.Producer.Consumer.Simulation.Program.Backend.Models.*;
 import com.Producer.Consumer.Simulation.Program.Backend.Models.Queue;
 import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Concurrency.ThreadManager;
+import com.Producer.Consumer.Simulation.Program.Backend.Pattern.Snapshot.Snapshot;
 import com.Producer.Consumer.Simulation.Program.Backend.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -67,7 +68,7 @@ public class SimulationService {
             }
         }, 0, 3000, TimeUnit.MILLISECONDS);
 
-        // ✅ بدء أخذ screenshots تلقائياً
+        // Scheduled every 500ms during active simulation
         snapshotScheduler = Executors.newScheduledThreadPool(1);
         snapshotScheduler.scheduleAtFixedRate(() -> {
             SimulationState currentState = buildCurrentState();
@@ -87,12 +88,12 @@ public class SimulationService {
             productGenerator.shutdown();
         }
 
-        // ✅ إيقاف أخذ الـ screenshots
+
         if (snapshotScheduler != null) {
             snapshotScheduler.shutdown();
         }
 
-        // ✅ حفظ عدد الـ snapshots لحد دلوقتي (للـ replay)
+
         replaySnapshotLimit = snapshotService.getSnapshotCount();
 
         System.out.println("[SimulationService] ⏸ Paused at screenshot: " + replaySnapshotLimit);
@@ -164,15 +165,11 @@ public class SimulationService {
                 .map(snapshot -> convertToSimulationStateDTO(snapshot.getState()))
                 .collect(Collectors.toList());
 
-        // ✅ إرجاع الـ snapshots من البداية لحد آخر pause فقط
         if (replaySnapshotLimit > 0 && replaySnapshotLimit < allSnapshots.size()) {
             List<SimulationStateDTO> replaySnapshots = allSnapshots.subList(0, replaySnapshotLimit);
-            System.out.println("[SimulationService] 🔄 Replay: Returning " + replaySnapshots.size() +
-                    " snapshots (from start to pause)");
+
             return replaySnapshots;
         }
-
-        System.out.println("[SimulationService] 🔄 Replay: Returning all " + allSnapshots.size() + " snapshots");
         return allSnapshots;
     }
 
@@ -484,5 +481,70 @@ public class SimulationService {
         dto.setRunning(state.isRunning());
         dto.setTimestamp(state.getTimestamp());
         return dto;
+    }
+    public List<Snapshot> getAllSnapshots() {
+        return snapshotService.getAllSnapshots();
+    }
+    public SimulationStateDTO restoreFromSnapshot(int index) {
+        System.out.println("[SimulationService] 🔄 Restoring snapshot #" + index);
+
+        // Get the snapshot
+        SimulationState restoredState = snapshotService.restoreSnapshot(index);
+
+        if (restoredState == null) {
+            System.out.println("[SimulationService] ⚠️ Snapshot not found");
+            return null;
+        }
+
+        // Stop simulation if running
+        if (isRunning) {
+            pauseSimulation();
+            try {
+                Thread.sleep(500); // Give threads time to stop
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // Clear current state
+        queueService.clearAll();
+        machineService.clearAll();
+        connections.clear();
+
+        System.out.println("[SimulationService] 🧹 Cleared current state");
+
+        // Restore queues from snapshot
+        for (Map.Entry<String, com.Producer.Consumer.Simulation.Program.Backend.Models.Queue> entry :
+                restoredState.getQueues().entrySet()) {
+            com.Producer.Consumer.Simulation.Program.Backend.Models.Queue queue = entry.getValue();
+            queueService.getAllQueues().put(queue.getId(), queue);
+        }
+
+        // Restore machines from snapshot
+        for (Map.Entry<String, Machine> entry : restoredState.getMachines().entrySet()) {
+            Machine machine = entry.getValue();
+            machineService.getAllMachines().put(machine.getId(), machine);
+        }
+
+        // Restore connections from snapshot
+        connections.addAll(restoredState.getConnections());
+
+        // Rebuild connections between machines and queues
+        for (Connection conn : restoredState.getConnections()) {
+            addConnection(conn.getSourceId(), conn.getTargetId());
+        }
+
+        System.out.println("[SimulationService] ✅ Snapshot restored: " +
+                restoredState.getQueues().size() + " queues, " +
+                restoredState.getMachines().size() + " machines, " +
+                restoredState.getConnections().size() + " connections");
+
+        // Build and return current state as DTO
+        SimulationState currentState = buildCurrentState();
+        return convertToSimulationStateDTO(currentState);
+    }
+    public void clearAllSnapshots() {
+        snapshotService.clearSnapshots();
+        System.out.println("[SimulationService] 🗑️ All snapshots cleared");
     }
 }
